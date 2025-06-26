@@ -61,7 +61,6 @@ void load_dlsyms() {
 }
 
 void* dlsym(void* handle, const char* name) {
-  // Intercepts
   if (strcmp(name, "time") == 0) {
     return (void*)time;
   }
@@ -134,7 +133,7 @@ int base_clock(int clkid) {
 timespec fake_time_impl(int clk_id, const ClockState* clock) {
   clk_id = base_clock(clk_id);
   timespec real;
-  real_clock_gettime(clk_id, &real);
+  (real_clock_gettime.load())(clk_id, &real);
   timespec real_delta = real - clock->clock_origins_real[clk_id];
   return clock->clock_origins_fake[clk_id] + real_delta * clock->speedup;
 }
@@ -143,10 +142,10 @@ void update_speedup(float new_speed, const ClockState* read_clock, ClockState* w
   ClockState new_clock;
   new_clock.speedup = new_speed;
   for (int clk_id = 0; clk_id < kNumClocks; clk_id++) {
-    real_clock_gettime(clk_id, &new_clock.clock_origins_real[clk_id]);
+    (real_clock_gettime.load())(clk_id, &new_clock.clock_origins_real[clk_id]);
     timespec fake;
     if (should_init) {
-      real_clock_gettime(clk_id, &fake);
+      (real_clock_gettime.load())(clk_id, &fake);
     } else {
       fake = fake_time_impl(clk_id, read_clock);
     }
@@ -173,7 +172,6 @@ T do_fake_time_fn(int clk_id) {
         current_clock_id.store(old_clock_id + 1);
         const uint64_t read_clock_idx = (old_clock_id / 2) % 2;
         const uint64_t write_clock_idx = (read_clock_idx + 1) % 2;
-        std::cout << "Read clock: " << read_clock_idx << " write clock " << write_clock_idx << std::endl;
         update_speedup(new_speed, &clocks[read_clock_idx], &clocks[write_clock_idx]);
         current_clock_id.store(old_clock_id + 2);
     }
@@ -190,7 +188,6 @@ T do_fake_time_fn(int clk_id) {
     uint64_t used_clock_idx = (used_clock / 2) % 2;
     val = f(clk_id, &clocks[used_clock_idx]);
     current_clock = current_clock_id.load();
-    std::cout << "Got time using clock: " << used_clock_idx << std::endl;
   } while (used_clock % 2 == 1 || current_clock % 2 == 1 || used_clock != current_clock);
 
   errno = orig_errno;
@@ -204,7 +201,7 @@ timespec fake_time(int clk_id) {
   return do_fake_time_fn<timespec, get_time>(clk_id);
 }
 
-float get_speedup(int clk_id, const ClockState* clock_state) {
+float get_speedup(__attribute__((unused)) int clk_id, const ClockState* clock_state) {
   return clock_state->speedup;
 }
 float current_speedup(int clk_id) {
@@ -214,11 +211,15 @@ float current_speedup(int clk_id) {
 
 time_t time(time_t* arg) {
   timespec tp = fake_time(CLOCK_REALTIME);
+  std::cout << "Read fake time: " << tp << std::endl;
+  if (arg) {
+    *arg = tp.tv_sec;
+  }
   return tp.tv_sec;
 }
 
 // NOTE: The error semantics here are a little off.
-int gettimeofday(struct timeval *tv, struct timezone *tz) {
+int gettimeofday(struct timeval *tv, __attribute__((unused)) struct timezone *tz) {
   timespec tp = fake_time(CLOCK_REALTIME);
   tv->tv_sec = tp.tv_sec;
   tv->tv_usec = tp.tv_nsec / 1000;
@@ -235,10 +236,14 @@ clock_t clock() {
   return (tp.tv_sec + (double)(tp.tv_nsec) / kBillion) * CLOCKS_PER_SEC;
 }
 
-// NOTE: The error semantics for sleep functions isn't preserved in these wrappers. How so?
 int nanosleep(const struct timespec* req, struct timespec* rem) {
   LAZY_LOAD_REAL(nanosleep);
-  return clock_nanosleep(CLOCK_REALTIME, 0, req, rem);
+  int ret = clock_nanosleep(CLOCK_REALTIME, 0, req, rem);
+  if (ret != 0) {
+    errno = ret;
+    ret = -1;
+  }
+  return ret;
 }
 
 int usleep(useconds_t usec) {
@@ -249,22 +254,32 @@ int usleep(useconds_t usec) {
 }
 
 unsigned int sleep(unsigned int seconds) {
-  // TODO: Handle rem case.
   LAZY_LOAD_REAL(nanosleep);
   timespec sleep_t;
   sleep_t.tv_sec = seconds;
   sleep_t.tv_nsec = 0;
-  nanosleep(&sleep_t, nullptr);
+
+  // sleep returns when a signal handler fires, so we don't need to do anything special
+  // with nanosleep's rem.
+  clock_nanosleep(CLOCK_REALTIME, 0, &sleep_t, /*rem=*/nullptr);
   return 0;
 }
 
-int clock_nanosleep(clockid_t clockid, int flags, const struct timespec* req, struct timespec* rem) {
-  // TODO: Handle flags.
+int clock_nanosleep(clockid_t clockid, int flags, const struct timespec* t, struct timespec* rem) {
   LAZY_LOAD_REAL(clock_nanosleep);
   const float speedup = current_speedup(clockid);
-  timespec goal_req = *req / speedup;
+
+  timespec req_sleep;
+  if (flags == TIMER_ABSTIME) {
+    req_sleep = *t - fake_time(clockid);
+  } else {
+    req_sleep = *t;
+  }
+
+  std::cout << "Nanosleep with speedup: " << speedup << std::endl;
+  timespec goal_req = req_sleep / speedup;
   timespec goal_rem;
-  int ret = real_clock_nanosleep(clockid, flags, &goal_req, &goal_rem);
+  int ret = (real_clock_nanosleep.load())(clockid, 0, &goal_req, &goal_rem);
   if (rem) {
     *rem = goal_rem * speedup;
   }
@@ -272,17 +287,17 @@ int clock_nanosleep(clockid_t clockid, int flags, const struct timespec* req, st
 }
 
 namespace testing {
-  void real_nanosleep(uint64_t nanos) {
+  int real_nanosleep(uint64_t nanos) {
     LAZY_LOAD_REAL(nanosleep);
     timespec n;
     n.tv_sec = nanos / kBillion;
     n.tv_nsec = nanos % kBillion;
-    ::real_nanosleep(&n, nullptr);
+    return (::real_nanosleep.load())(&n, nullptr);
   }
 
   int real_clock_gettime(int clkid, timespec* t) {
     LAZY_LOAD_REAL(clock_gettime);
-    return ::real_clock_gettime(clkid, t);
+    return (::real_clock_gettime.load())(clkid, t);
   }
 }  // namespace testing
 

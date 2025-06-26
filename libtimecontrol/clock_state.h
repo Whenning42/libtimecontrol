@@ -12,7 +12,13 @@ struct ClockState {
 
 
 float get_speedup();
-void set_speedup(float speedup, int32_t channel, bool async);
+void set_speedup(float speedup, int32_t channel);
 
 bool get_new_speed(float* new_speed);
-inline void init_speedup(ClockState clock_0, ClockState clock_1);
+void init_speedup(ClockState clock_0, ClockState clock_1);
+
+namespace testing {
+  void set_channel(int32_t channel);
+}
+
+struct ClockState read_clock(int32_t clock_id);

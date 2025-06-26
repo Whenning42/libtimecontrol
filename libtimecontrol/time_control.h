@@ -15,13 +15,13 @@
 // x sem_timedwait
 
 namespace testing {
-  void real_nanosleep(uint64_t nanos);
+  int real_nanosleep(uint64_t nanos);
   int real_clock_gettime(int clkid, timespec* t);
 } // namespace testing
 
 // Implemented in clock_state.inl
 float get_speedup();
-void set_speedup(float speedup, int32_t channel, bool async);
+void set_speedup(float speedup, int32_t channel);
 
 #include "clock_state.h"
 #include "constants.h"

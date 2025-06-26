@@ -54,5 +54,6 @@ timespec operator+(const timespec& t1, const timespec& t0) {
 }
 
 timespec operator/(const timespec& t, double s) {
+  assert(s != 0);
   return t * (1 / s);
 }
