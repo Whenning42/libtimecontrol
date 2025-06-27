@@ -7,6 +7,7 @@
 #include <sys/mman.h>
 #include <sys/stat.h>
 #include <unistd.h>
+#include <unordered_map>
 
 #include "clock_state.h"
 #include "time_overrides.h"
@@ -74,9 +75,11 @@ sem_t* get_channel_sem(const int32_t channel) {
   return sem;
 }
 
-void set_speedup(float speedup, int32_t channel) {
+extern "C" void set_speedup(float speedup, int32_t channel) {
   void* map = get_channel_mmap(channel);
   sem_t* sem = get_channel_sem(channel);
+
+  fprintf(stderr, "Writing speedup %f to channel %d\n", speedup, channel);
 
   ((std::atomic<float>*)(map))->store(speedup);
   msync(map, sizeof(float), MS_SYNC);
@@ -94,6 +97,8 @@ void* watch_speed(void*) {
   channel_var = channel_var ? channel_var : default_channel;
   int32_t channel = std::stoi(channel_var);
 
+  fprintf(stderr, "Watching speedup on channel %d\n", channel);
+
   sem_t* sem = get_channel_sem(channel);
   void* map = get_channel_mmap(channel);
 
@@ -104,6 +109,7 @@ void* watch_speed(void*) {
     }
 
     const float read_speedup = ((std::atomic<float>*)map)->load();
+    fprintf(stderr, "Read speedup %f on channel %d\n", read_speedup, channel);
     const float old_speedup = speedup.load();
     if (read_speedup != old_speedup) {
       speedup.store(read_speedup);
@@ -133,15 +139,5 @@ void init_speedup() {
   pthread_t thread;
   pthread_create(&thread, nullptr, &watch_speed, nullptr);
   // TODO: Launch semaphore synchronized listen_for_speedup_changes();
-}
-
-namespace testing {
-void set_channel(int32_t channel) {
-  char env_val[64];
-  snprintf(env_val, 64, "%d", channel);
-  int ret = setenv(time_channel_env_var, env_val, 1);
-  if (ret == -1) {
-    perror("setenv");
-  }
 }
 }

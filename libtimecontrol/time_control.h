@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cstdint>
+#include <time.h>
 
 // Intercepted functions
 // ✓ time
@@ -21,7 +22,7 @@ namespace testing {
 
 // Implemented in clock_state.inl
 float get_speedup();
-void set_speedup(float speedup, int32_t channel);
+extern "C" void set_speedup(float speedup, int32_t channel);
 
 #include "clock_state.h"
 #include "constants.h"
