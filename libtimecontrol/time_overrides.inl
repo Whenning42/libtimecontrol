@@ -7,6 +7,8 @@
 #include "time_overrides.h"
 #include "clock_state.h"
 
+const int NUM_CLOCKS = 4;
+
 // Statically initialize our global pointers.
 InitPFNs::InitPFNs() {
   if (!libc_dlsym) {
@@ -138,59 +140,21 @@ timespec fake_time_impl(int clk_id, const ClockState* clock) {
   return clock->clock_origins_fake[clk_id] + real_delta * clock->speedup;
 }
 
-void update_speedup(float new_speed, const ClockState* read_clock, ClockState* write_clock, bool should_init = false) {
-  ClockState new_clock;
-  new_clock.speedup = new_speed;
-  for (int clk_id = 0; clk_id < kNumClocks; clk_id++) {
-    (real_clock_gettime.load())(clk_id, &new_clock.clock_origins_real[clk_id]);
-    timespec fake;
-    if (should_init) {
-      (real_clock_gettime.load())(clk_id, &fake);
-    } else {
-      fake = fake_time_impl(clk_id, read_clock);
-    }
-    new_clock.clock_origins_fake[clk_id] = fake;
-  }
-  *write_clock = new_clock;
-}
-
 template<typename T, T(*f)(int, const ClockState*)>
 T do_fake_time_fn(int clk_id) {
-  int orig_errno = errno;
-
-  // We guard clocks with a seqlock so that this function is re-entrant and thus
-  // async-signal-safe.
-
-  // Write section.
-  bool was_locked = write_lock.exchange(true);
-  if (!was_locked) {
-    float new_speed;
-    bool change_speed = get_new_speed(&new_speed);
-
-    if (change_speed) {
-        uint64_t old_clock_id = current_clock_id.load();
-        current_clock_id.store(old_clock_id + 1);
-        const uint64_t read_clock_idx = (old_clock_id / 2) % 2;
-        const uint64_t write_clock_idx = (read_clock_idx + 1) % 2;
-        update_speedup(new_speed, &clocks[read_clock_idx], &clocks[write_clock_idx]);
-        current_clock_id.store(old_clock_id + 2);
-    }
-    write_lock.store(false);
-  }
-
-  // Read section.
   clk_id = base_clock(clk_id);
-  T val;
+
+  // Read section
   uint64_t used_clock;
   uint64_t current_clock;
+  T val;
   do {
-    used_clock = current_clock_id.load();
+    used_clock = clock_id.load();
     uint64_t used_clock_idx = (used_clock / 2) % 2;
     val = f(clk_id, &clocks[used_clock_idx]);
-    current_clock = current_clock_id.load();
+    current_clock = clock_id.load();
   } while (used_clock % 2 == 1 || current_clock % 2 == 1 || used_clock != current_clock);
 
-  errno = orig_errno;
   return val;
 }
 
@@ -209,9 +173,24 @@ float current_speedup(int clk_id) {
 }
 }  // namespace
 
+void update_speedup(float new_speed, const ClockState* read_clock, ClockState* write_clock, bool should_init) {
+  ClockState new_clock;
+  new_clock.speedup = new_speed;
+  for (int clk_id = 0; clk_id < NUM_CLOCKS; clk_id++) {
+    (real_clock_gettime.load())(clk_id, &new_clock.clock_origins_real[clk_id]);
+    timespec fake;
+    if (should_init) {
+      (real_clock_gettime.load())(clk_id, &fake);
+    } else {
+      fake = fake_time_impl(clk_id, read_clock);
+    }
+    new_clock.clock_origins_fake[clk_id] = fake;
+  }
+  *write_clock = new_clock;
+}
+
 time_t time(time_t* arg) {
   timespec tp = fake_time(CLOCK_REALTIME);
-  std::cout << "Read fake time: " << tp << std::endl;
   if (arg) {
     *arg = tp.tv_sec;
   }
@@ -276,7 +255,6 @@ int clock_nanosleep(clockid_t clockid, int flags, const struct timespec* t, stru
     req_sleep = *t;
   }
 
-  std::cout << "Nanosleep with speedup: " << speedup << std::endl;
   timespec goal_req = req_sleep / speedup;
   timespec goal_rem;
   int ret = (real_clock_nanosleep.load())(clockid, 0, &goal_req, &goal_rem);
@@ -301,14 +279,8 @@ namespace testing {
   }
 }  // namespace testing
 
-ClockState init_clock() {
-  ClockState clock;
-  update_speedup(kInitialSpeed, /*read_clock=*/nullptr, &clock, /*should_init=*/true);
-  return clock;
-}
-
 __attribute__((constructor))
 void init() {
   InitPFNs pfns;
-  init_speedup(init_clock(), init_clock());
+  init_speedup();
 }

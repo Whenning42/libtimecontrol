@@ -45,3 +45,6 @@ class InitPFNs {
  public:
   InitPFNs();
 };
+
+
+void update_speedup(float new_speed, const ClockState* read_clock, ClockState* write_clock, bool should_init = false);

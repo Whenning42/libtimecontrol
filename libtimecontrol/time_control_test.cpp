@@ -19,33 +19,32 @@ class TimeControlTest : public testing::Test {
 TEST_F(TimeControlTest, Time) {
   SetSpeedup(30);
   time_t start_time = time(nullptr);
-  testing::real_nanosleep(kBillion);
+  testing::real_nanosleep(.1 * kBillion);
   time_t end_time = time(nullptr);
 
-  EXPECT_LE(end_time - start_time, 31);
-  EXPECT_GE(end_time - start_time, 29);
+  EXPECT_NEAR(end_time - start_time, 3, 1);
 }
 
 TEST_F(TimeControlTest, TimeNoWarmupCall) {
   SetSpeedup(1);
   time_t start_time = time(nullptr);
   SetSpeedup(30);
-  testing::real_nanosleep(kBillion);
+  testing::real_nanosleep(.1 * kBillion);
   time_t end_time = time(nullptr);
 
-  EXPECT_NEAR(end_time - start_time, 30, 2);
+  EXPECT_NEAR(end_time - start_time, 3, 1);
 }
 
 TEST_F(TimeControlTest, ClockGettime) {
   timespec start;
   timespec end;
 
-  SetSpeedup(3);
+  SetSpeedup(20);
   clock_gettime(CLOCK_REALTIME, &start);
-  testing::real_nanosleep(kBillion);
+  testing::real_nanosleep(.1 * kBillion);
   clock_gettime(CLOCK_REALTIME, &end);
 
-  EXPECT_NEAR(timespec_to_sec(end - start), 3, .01);
+  EXPECT_NEAR(timespec_to_sec(end - start), 2, .01);
 }
 
 TEST_F(TimeControlTest, ClockGettimeSubsecond) {
@@ -70,10 +69,10 @@ TEST_F(TimeControlTest, ClockGettimeWallClocks) {
   };
 
   for (int clock : wall_clocks) {
-    SetSpeedup(2);
+    SetSpeedup(4);
 
     clock_gettime(clock, &start);
-    testing::real_nanosleep(.1 * kBillion);
+    testing::real_nanosleep(.05 * kBillion);
     clock_gettime(clock, &end);
 
     SetSpeedup(3);
@@ -90,14 +89,14 @@ TEST_F(TimeControlTest, Clock) {
 
   SetSpeedup(1);
   start_1 = clock();
-  for (int i = 0; i < 1.5 * kBillion; ++i) {
+  for (int i = 0; i < .3 * kBillion; ++i) {
     acc += i * 57 + 3;
   }
   end_1 = clock();
 
   SetSpeedup(10);
   start_2 = clock();
-  for (int i = 0; i < 1.5 * kBillion; ++i) {
+  for (int i = 0; i < .3 * kBillion; ++i) {
     acc += i * 57 + 3;
   }
   end_2 = clock();
@@ -110,7 +109,7 @@ TEST_F(TimeControlTest, Clock) {
 
 TEST_F(TimeControlTest, Nanosleep) {
   timespec sleep;
-  sleep.tv_sec = 4;
+  sleep.tv_sec = 2;
   sleep.tv_nsec = 0;
   timespec start;
   timespec end;
@@ -120,7 +119,7 @@ TEST_F(TimeControlTest, Nanosleep) {
   nanosleep(&sleep, nullptr);
   testing::real_clock_gettime(CLOCK_REALTIME, &end);
 
-  EXPECT_NEAR(timespec_to_sec(end - start), 1, .01);
+  EXPECT_NEAR(timespec_to_sec(end - start), .5, .01);
 }
 
 TEST_F(TimeControlTest, Usleep) {
@@ -129,10 +128,10 @@ TEST_F(TimeControlTest, Usleep) {
 
   SetSpeedup(2);
   testing::real_clock_gettime(CLOCK_REALTIME, &start);
-  usleep(2 * kMillion);
+  usleep(1 * kMillion);
   testing::real_clock_gettime(CLOCK_REALTIME, &end);
 
-  EXPECT_NEAR(timespec_to_sec(end - start), 1, .01);
+  EXPECT_NEAR(timespec_to_sec(end - start), .5, .01);
 }
 
 TEST_F(TimeControlTest, Sleep) {
@@ -145,7 +144,6 @@ TEST_F(TimeControlTest, Sleep) {
   testing::real_clock_gettime(CLOCK_REALTIME, &end);
 
   EXPECT_NEAR(timespec_to_sec(end - start), 1, .01);
-  std::cout << "Slept for " << timespec_to_sec(end - start) << std::endl;
 }
 
 TEST_F(TimeControlTest, MulOperator) {

@@ -9,6 +9,7 @@
 #include <unistd.h>
 
 #include "clock_state.h"
+#include "time_overrides.h"
 
 const char* default_channel = "-1";
 const char* time_channel_env_var = "TIME_CONTROL_CHANNEL";
@@ -17,7 +18,7 @@ namespace {
 // Seqlocked clock state.
 ClockState clocks[2] = {ClockState(), ClockState()};
 std::atomic<bool> write_lock(false);
-std::atomic<uint64_t> current_clock_id(0);
+std::atomic<uint64_t> clock_id(0);
 
 std::atomic<float> speedup(1);
 }
@@ -73,29 +74,12 @@ sem_t* get_channel_sem(const int32_t channel) {
   return sem;
 }
 
-void update_speedup(float new_speed, const ClockState* read_clock, ClockState* write_clock, bool should_init = false) {
-  ClockState new_clock;
-  new_clock.speedup = new_speed;
-  for (int clk_id = 0; clk_id < kNumClocks; clk_id++) {
-    (real_clock_gettime.load())(clk_id, &new_clock.clock_origins_real[clk_id]);
-    timespec fake;
-    if (should_init) {
-      (real_clock_gettime.load())(clk_id, &fake);
-    } else {
-      fake = fake_time_impl(clk_id, read_clock);
-    }
-    new_clock.clock_origins_fake[clk_id] = fake;
-  }
-  *write_clock = new_clock;
-}
-
 void set_speedup(float speedup, int32_t channel) {
   void* map = get_channel_mmap(channel);
   sem_t* sem = get_channel_sem(channel);
 
   ((std::atomic<float>*)(map))->store(speedup);
   msync(map, sizeof(float), MS_SYNC);
-  std::cout << "Signaling semaphore: " << channel << std::endl;
   sem_post(sem);
   return;
 }
@@ -112,7 +96,6 @@ void* watch_speed(void*) {
 
   sem_t* sem = get_channel_sem(channel);
   void* map = get_channel_mmap(channel);
-  std::cout << "Watching semaphore: " << channel << std::endl;
 
   while (true) {
     int ret = sem_wait(sem);
@@ -121,19 +104,31 @@ void* watch_speed(void*) {
     }
 
     const float read_speedup = ((std::atomic<float>*)map)->load();
-    std::cout << "Reading new time: " << read_speedup << std::endl;
     const float old_speedup = speedup.load();
     if (read_speedup != old_speedup) {
       speedup.store(read_speedup);
+
+      // Since we only have a single writer thread, there's no write lock to acquire.
+      uint64_t start_id = clock_id.load();
+      uint64_t read_idx = (start_id / 2) % 2;
+      uint64_t write_idx = (read_idx + 1) % 2;
+      clock_id.store(start_id + 1);
+      update_speedup(read_speedup, &clocks[read_idx], &clocks[write_idx]);
+      clock_id.store(start_id + 2);
     }
-    // TODO: Don't just set a new speedup, but actually update the clock state.
   }
   return nullptr;
 }
 
-void init_speedup(ClockState clock_0, ClockState clock_1) {
-  clocks[0] = clock_0;
-  clocks[1] = clock_1;
+ClockState init_clock() {
+  ClockState clock;
+  update_speedup(1.0, /*read_clock=*/nullptr, &clock, /*should_init=*/true);
+  return clock;
+}
+
+void init_speedup() {
+  clocks[0] = init_clock();
+  clocks[1] = init_clock();
 
   pthread_t thread;
   pthread_create(&thread, nullptr, &watch_speed, nullptr);
@@ -149,12 +144,4 @@ void set_channel(int32_t channel) {
     perror("setenv");
   }
 }
-}
-
-void write_clock(const struct ClockState& clock, int32_t clock_id) {
-  // TODO: Read write implementation
-}
-
-struct ClockState read_clock(int32_t clock_id) {
-
 }

@@ -15,7 +15,7 @@ float get_speedup();
 void set_speedup(float speedup, int32_t channel);
 
 bool get_new_speed(float* new_speed);
-void init_speedup(ClockState clock_0, ClockState clock_1);
+void init_speedup();
 
 namespace testing {
   void set_channel(int32_t channel);

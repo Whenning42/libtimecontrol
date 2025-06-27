@@ -24,6 +24,6 @@ time_overrides_test_exe = executable('time_overrides_test_exe', ['time_overrides
 clock_state_test_exe = executable('clock_state_test_exe', ['clock_state_test.cpp'],
                        dependencies: [ldl_dep, latomic_dep, lgtest_dep, lgtest_main_dep],
                        cpp_args: ['-pthread', '-std=c++17'])
-test('time_control_test', time_control_test_exe)
-test('time_overrides_test', time_overrides_test_exe)
-test('clock_state_test', clock_state_test_exe)
+test('time_control_test', time_control_test_exe, is_parallel: false)
+test('time_overrides_test', time_overrides_test_exe, is_parallel: false)
+test('clock_state_test', clock_state_test_exe, is_parallel: false)
