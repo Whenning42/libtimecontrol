@@ -227,7 +227,6 @@ int nanosleep(const struct timespec* req, struct timespec* rem) {
 }
 
 int usleep(useconds_t usec) {
-  fprintf(stderr, "Usleep sees speedup: %f\n", get_speedup());
   timespec sleep_t;
   sleep_t.tv_sec = usec / kMillion;
   sleep_t.tv_nsec = (uint64_t)(usec * 1000) % kBillion;

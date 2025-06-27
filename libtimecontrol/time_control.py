@@ -11,9 +11,9 @@ class PreloadMode(Enum):
 
 
 class TimeController:
-    def __init__(self, channel: int, override_mode: PreloadMode):
+    def __init__(self, channel: int, preload_mode: PreloadMode):
         self.channel = channel
-        self.override_mode = override_mode
+        self.preload_mode = preload_mode
 
         lib_path = PACKAGE_ROOT + "/lib/libtime_control.so"
         ffi = FFI()
@@ -24,8 +24,11 @@ class TimeController:
         self.libtime_control.set_speedup(speedup, self.channel)
 
     def child_flags(self) -> dict[str, str]:
+        mode_str = ""
+        if self.preload_mode == PreloadMode.DLSYM:
+            mode_str = "_dlsym"
         preload = (
-            f"{PACKAGE_ROOT}/lib/libtime_control.so:"
-            f"{PACKAGE_ROOT}/lib/libtime_control32.so"
+            f"{PACKAGE_ROOT}/lib/libtime_control{mode_str}.so:"
+            f"{PACKAGE_ROOT}/lib/libtime_control32{mode_str}.so"
         )
         return {"TIME_CONTROL_CHANNEL": str(self.channel), "LD_PRELOAD": preload}

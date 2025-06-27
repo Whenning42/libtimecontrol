@@ -28,62 +28,85 @@ float get_speedup() {
   return speedup.load();
 }
 
-// Note: A writer doesn't need the cache, since writes are infrequent.
-// The reader only needs to cache a single channel's maps and sems.
+void get_shm_path(int32_t channel, char buf[128]) {
+  snprintf(buf, 128, "time_control_sem_%d", channel);
+}
+
+void get_sem_name(int32_t channel, char buf[128]) {
+  const char* runtime_dir = getenv("XDG_RUNTIME_DIR");
+  runtime_dir = runtime_dir ? runtime_dir : "/tmp";
+
+  char fifo_dir[128];
+  snprintf(fifo_dir, 128, "%s/time_control", runtime_dir);
+  mkdir(fifo_dir, 0600);
+  snprintf(buf, 128, "%s/time_control/fifo_%d", runtime_dir, channel);
+}
+
+int fsem_open_writer(const char* name) {
+  int fd = open(name, O_WRONLY | O_NONBLOCK);
+  if (fd == -1) {
+    perror("Writer open");
+  }
+  return fd;
+}
+
+int fsem_open_reader(const char* name) {
+  int r = mkfifo(name, 0600);
+  if (r == -1 && errno != EEXIST) {
+    perror("mkfifo");
+  }
+
+  // Note: Opening in O_NONBLOCK and then unsetting O_NONBLOCK didn't make the pipe
+  // blocking. Only opening in RDWR seems to achieve open that's non-blocked on a
+  // writer opening it.
+  int fd = open(name, O_RDWR);
+  if (fd == -1) {
+    perror("Reader open");
+  }
+  return fd;
+}
+
+void fsem_post(int fsem) {
+  char b = '\0';
+  int written = write(fsem, &b, 1);
+  if (written == -1) {
+    perror("fsem_post write");
+  }
+}
+
+void fsem_wait(int fsem) {
+  char b;
+  errno = 0;
+  int b_read = read(fsem, &b, 1);
+  if (b_read == -1) {
+    perror("fsem_wait read");
+  }
+}
+
 void* get_channel_mmap(const int32_t channel) {
-  static std::unordered_map<int32_t, void*> channel_maps;
-
-  auto map_it = channel_maps.find(channel);
-  void* map;
-  if (map_it == channel_maps.end()) {
-    char path[64];
-    snprintf(path, 64, "time_control_shm_%d", channel);
-    int fd = shm_open(path, O_RDWR | O_CREAT, 0600);
-    if (fd == -1) {
-      perror("shm_open failed.");
-    }
-    ftruncate(fd, sizeof(float));
-    map = mmap(NULL, sizeof(float), PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
-    if (map == MAP_FAILED) {
-      perror("mmap failed.");
-    }
-
-    channel_maps[channel] = map;
-  } else {
-    map = map_it->second;
+  char path[128];
+  get_shm_path(channel, path);
+  int fd = shm_open(path, O_RDWR | O_CREAT, 0600);
+  if (fd == -1) {
+    perror("shm_open failed");
+  }
+  ftruncate(fd, sizeof(float));
+  void* map = mmap(NULL, sizeof(float), PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
+  if (map == MAP_FAILED) {
+    perror("mmap failed.");
   }
   return map;
 }
 
-sem_t* get_channel_sem(const int32_t channel) {
-  static std::unordered_map<int32_t, sem_t*> channel_sems;
-
-  auto sem_it = channel_sems.find(channel);
-  sem_t *sem;
-  if (sem_it == channel_sems.end()) {
-    char path[64];
-    snprintf(path, 64, "time_control_sem_%d", channel);
-    sem = sem_open(path, O_CREAT, 0600);
-    if (sem == SEM_FAILED) {
-      perror("sem open failed.");
-    }
-
-    channel_sems[channel] = sem;
-  } else {
-    sem = sem_it->second;
-  }
-  return sem;
-}
-
 extern "C" void set_speedup(float speedup, int32_t channel) {
   void* map = get_channel_mmap(channel);
-  sem_t* sem = get_channel_sem(channel);
-
-  fprintf(stderr, "Writing speedup %f to channel %d\n", speedup, channel);
+  char sem_path[128];
+  get_sem_name(channel, sem_path);
+  int fsem = fsem_open_writer(sem_path);
 
   ((std::atomic<float>*)(map))->store(speedup);
   msync(map, sizeof(float), MS_SYNC);
-  sem_post(sem);
+  fsem_post(fsem);
   return;
 }
 
@@ -97,19 +120,19 @@ void* watch_speed(void*) {
   channel_var = channel_var ? channel_var : default_channel;
   int32_t channel = std::stoi(channel_var);
 
-  fprintf(stderr, "Watching speedup on channel %d\n", channel);
-
-  sem_t* sem = get_channel_sem(channel);
   void* map = get_channel_mmap(channel);
+  char sem_path[128];
+  get_sem_name(channel, sem_path);
+  int fsem = fsem_open_reader(sem_path);
 
+  bool init = false;
   while (true) {
-    int ret = sem_wait(sem);
-    if (ret == -1) {
-      perror("sem_wait.");
+    if (init) {
+      fsem_wait(fsem);
     }
+    init = true;
 
     const float read_speedup = ((std::atomic<float>*)map)->load();
-    fprintf(stderr, "Read speedup %f on channel %d\n", read_speedup, channel);
     const float old_speedup = speedup.load();
     if (read_speedup != old_speedup) {
       speedup.store(read_speedup);
@@ -138,6 +161,4 @@ void init_speedup() {
 
   pthread_t thread;
   pthread_create(&thread, nullptr, &watch_speed, nullptr);
-  // TODO: Launch semaphore synchronized listen_for_speedup_changes();
-}
 }
