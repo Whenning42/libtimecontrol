@@ -43,10 +43,9 @@ void get_sem_name(int32_t channel, char buf[128]) {
 }
 
 int fsem_open_writer(const char* name) {
+  // We expect the semaphore to be unavailable until the child starts, so we ignore
+  // semaphore open errors.
   int fd = open(name, O_WRONLY | O_NONBLOCK);
-  if (fd == -1) {
-    perror("Writer open");
-  }
   return fd;
 }
 
@@ -106,7 +105,9 @@ extern "C" void set_speedup(float speedup, int32_t channel) {
 
   ((std::atomic<float>*)(map))->store(speedup);
   msync(map, sizeof(float), MS_SYNC);
-  fsem_post(fsem);
+  if (fsem != -1) {
+    fsem_post(fsem);
+  }
   return;
 }
 
