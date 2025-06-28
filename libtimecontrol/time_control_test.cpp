@@ -72,12 +72,12 @@ TEST_F(TimeControlTest, ClockGettimeWallClocks) {
     SetSpeedup(4);
 
     clock_gettime(clock, &start);
-    testing::real_nanosleep(.05 * kBillion);
+    testing::real_nanosleep(.03 * kBillion);
     clock_gettime(clock, &end);
 
     SetSpeedup(3);
     clock_gettime(clock, &end2);
-    EXPECT_NEAR(timespec_to_sec(end - start), .2, .05);
+    EXPECT_NEAR(timespec_to_sec(end - start), .12, .05);
     EXPECT_NEAR(timespec_to_sec(end2 - end), 0, .05);
   }
 }
@@ -89,14 +89,14 @@ TEST_F(TimeControlTest, Clock) {
 
   SetSpeedup(1);
   start_1 = clock();
-  for (int i = 0; i < .3 * kBillion; ++i) {
+  for (int i = 0; i < .2 * kBillion; ++i) {
     acc += i * 57 + 3;
   }
   end_1 = clock();
 
   SetSpeedup(10);
   start_2 = clock();
-  for (int i = 0; i < .3 * kBillion; ++i) {
+  for (int i = 0; i < .2 * kBillion; ++i) {
     acc += i * 57 + 3;
   }
   end_2 = clock();
@@ -114,36 +114,36 @@ TEST_F(TimeControlTest, Nanosleep) {
   timespec start;
   timespec end;
 
-  SetSpeedup(4);
+  SetSpeedup(12);
   testing::real_clock_gettime(CLOCK_REALTIME, &start);
   nanosleep(&sleep, nullptr);
   testing::real_clock_gettime(CLOCK_REALTIME, &end);
 
-  EXPECT_NEAR(timespec_to_sec(end - start), .5, .01);
+  EXPECT_NEAR(timespec_to_sec(end - start), .166, .01);
 }
 
 TEST_F(TimeControlTest, Usleep) {
   timespec start;
   timespec end;
 
-  SetSpeedup(2);
+  SetSpeedup(8);
   testing::real_clock_gettime(CLOCK_REALTIME, &start);
   usleep(1 * kMillion);
   testing::real_clock_gettime(CLOCK_REALTIME, &end);
 
-  EXPECT_NEAR(timespec_to_sec(end - start), .5, .01);
+  EXPECT_NEAR(timespec_to_sec(end - start), .125, .01);
 }
 
 TEST_F(TimeControlTest, Sleep) {
   timespec start;
   timespec end;
 
-  SetSpeedup(10);
+  SetSpeedup(40);
   testing::real_clock_gettime(CLOCK_REALTIME, &start);
   sleep(10);
   testing::real_clock_gettime(CLOCK_REALTIME, &end);
 
-  EXPECT_NEAR(timespec_to_sec(end - start), 1, .01);
+  EXPECT_NEAR(timespec_to_sec(end - start), 0.25, .01);
 }
 
 TEST_F(TimeControlTest, MulOperator) {
