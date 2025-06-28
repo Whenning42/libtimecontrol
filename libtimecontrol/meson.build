@@ -5,18 +5,22 @@ latomic_dep = cc.find_library('atomic', required: true)
 # Libs
 libtime_control = shared_library('time_control', 'time_control.cpp',
                         dependencies: [ldl_dep, latomic_dep],
-                        cpp_args: ['-pthread', '-std=c++17', '-fPIC', '-shared', '-march=native', '-O3'])
+                        cpp_args: ['-pthread', '-std=c++17', '-fPIC', '-shared', '-march=native', '-O3'],
+                        install: true)
 libtime_control32 = shared_library('time_control32', 'time_control.cpp',
                         dependencies: [ldl_dep, latomic_dep],
                         cpp_args: ['-pthread', '-std=c++17', '-fPIC', '-shared', '-march=native', '-O3', '-m32'],
-                        link_args: ['-m32'])
+                        link_args: ['-m32'],
+                        install: true)
 libtime_control_dlsym = shared_library('time_control_dlsym', 'time_control.cpp',
                                        dependencies: [ldl_dep, latomic_dep],
-                                       cpp_args: ['-pthread', '-std=c++17', '-fPIC', '-shared', '-march=native', '-O3', '-DDLSYM_OVERRIDE'])
+                                       cpp_args: ['-pthread', '-std=c++17', '-fPIC', '-shared', '-march=native', '-O3', '-DDLSYM_OVERRIDE'],
+                                       install: true)
 libtime_control_dlsym32 = shared_library('time_control32_dlsym', 'time_control.cpp',
                                           dependencies: [ldl_dep, latomic_dep],
                                           cpp_args: ['-pthread', '-std=c++17', '-fPIC', '-shared', '-march=native', '-O3', '-m32', '-DDLSYM_OVERRIDE'],
-                                          link_args: ['-m32'])
+                                          link_args: ['-m32'],
+                                          install: true)
 
 # Tests
 lgtest_dep = cc.find_library('gtest', required: false)
