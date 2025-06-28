@@ -5,7 +5,9 @@ the rate at which time passes for another process.
 
 # Usage
 
+# TODO: Upload the project to pypi
 ```
+$ pip install libtimecontrol 
 $ # Launch app with LD_PRELOAD and time channel set.
 $ # Control the app with time_control.py.
 ```

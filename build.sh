@@ -8,3 +8,5 @@ meson install
 meson test
 
 cd ..
+
+poetry build

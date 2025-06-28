@@ -1,2 +1,4 @@
 libtimecontrol/lib/*
 libtimecontrol/bin/*
+dist/*
+todo.txt
