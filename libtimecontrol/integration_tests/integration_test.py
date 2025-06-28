@@ -1,3 +1,7 @@
+# Runs integrations tests of the TimeController running against child processes that
+# have been launched with time_control preloads. To run these tests, the preloads and
+# test binaries need to be built (run build.sh).
+
 import os
 import random
 import subprocess
