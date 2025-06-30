@@ -1,3 +1,5 @@
+#!/bin/bash
+
 set -eu
 
 SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
@@ -6,7 +8,3 @@ cd build
 ninja
 meson install
 meson test
-
-cd ..
-
-poetry build

@@ -9,6 +9,7 @@ license = {text = "MIT"}
 readme = "README.md"
 requires-python = ">=3.9"
 dependencies = [
+    "cffi (>=1.17.1,<2.0.0)"
 ]
 
 [build-system]
@@ -26,3 +27,12 @@ exclude = [
     "**/*.inl",
     "**/*.build",
 ]
+
+[tool.poetry.group.dev.dependencies]
+cibuildwheel = "2.23.3"
+auditwheel = "^6.4.0"
+patchelf = "^0.17.2.2"
+meson = "^1.8.2"
+ninja = "^1.11.1.4"
+
+
