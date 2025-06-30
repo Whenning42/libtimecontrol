@@ -34,5 +34,4 @@ auditwheel = "^6.4.0"
 patchelf = "^0.17.2.2"
 meson = "^1.8.2"
 ninja = "^1.11.1.4"
-
-
+twine = "^6.1.0"
