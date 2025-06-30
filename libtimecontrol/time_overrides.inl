@@ -161,7 +161,7 @@ T do_fake_time_fn(int clk_id) {
 
 timespec get_time(int clk_id, const ClockState* clock_state) {
     return fake_time_impl(clk_id, clock_state);
-};
+}
 timespec fake_time(int clk_id) {
   return do_fake_time_fn<timespec, get_time>(clk_id);
 }

@@ -15,7 +15,7 @@ dlsym_type libc_dlsym = dlsym;
 #endif
 
 #define PFN_TYPEDEF(func) typedef decltype(&func) PFN_##func
-#define LAZY_LOAD_REAL(func) if(!real_##func) { \
+#define LAZY_LOAD_REAL(func) if(!::real_##func) { \
     ::real_##func = (PFN_##func)libc_dlsym(RTLD_NEXT, #func); \
 }
 
