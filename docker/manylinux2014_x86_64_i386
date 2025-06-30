@@ -2,8 +2,6 @@
 
 FROM quay.io/pypa/manylinux2014_x86_64
 
-ENV PATH="/root/.local/bin:${PATH}"
-
 # We get the 32-bit repo from mayeut's fedora COPR linked here. I'm not sure what,
 # if any, guarantees there are that this COPR stays at this url.
 RUN curl -fsSLo /etc/yum.repos.d/mayeut-devtoolset-10.repo \
