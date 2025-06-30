@@ -11,7 +11,7 @@ class PreloadMode(Enum):
 
 
 class TimeController:
-    def __init__(self, channel: int, preload_mode: PreloadMode):
+    def __init__(self, channel: int, preload_mode: PreloadMode = PreloadMode.DLSYM):
         self.channel = channel
         self.preload_mode = preload_mode
 
