@@ -1,0 +1,11 @@
+# A manylinux container with x86_64 and i386 repos.
+
+FROM quay.io/pypa/manylinux2014_x86_64
+
+ENV PATH="/root/.local/bin:${PATH}"
+
+# We get the 32-bit repo from mayeut's fedora COPR linked here. I'm not sure what,
+# if any, guarantees there are that this COPR stays at this url.
+RUN curl -fsSLo /etc/yum.repos.d/mayeut-devtoolset-10.repo \
+            https://copr.fedorainfracloud.org/coprs/mayeut/devtoolset-10/repo/custom-1/mayeut-devtoolset-10-custom-1.repo
+RUN sed -i 's/\$basearch/i386/g' /etc/yum.repos.d/mayeut-devtoolset-10.repo 
