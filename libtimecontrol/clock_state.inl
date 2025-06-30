@@ -38,7 +38,7 @@ void get_sem_name(int32_t channel, char buf[128]) {
 
   char fifo_dir[128];
   snprintf(fifo_dir, 128, "%s/time_control", runtime_dir);
-  mkdir(fifo_dir, 0600);
+  mkdir(fifo_dir, 0700);
   snprintf(buf, 128, "%s/time_control/fifo_%d", runtime_dir, channel);
 }
 
@@ -53,6 +53,7 @@ int fsem_open_reader(const char* name) {
   int r = mkfifo(name, 0600);
   if (r == -1 && errno != EEXIST) {
     perror("mkfifo");
+    fprintf(stderr, "while opening: %s\n", name);
   }
 
   // Note: Opening in O_NONBLOCK and then unsetting O_NONBLOCK didn't make the pipe
@@ -125,6 +126,10 @@ void* watch_speed(void*) {
   char sem_path[128];
   get_sem_name(channel, sem_path);
   int fsem = fsem_open_reader(sem_path);
+  if (fsem == -1) {
+    perror("got bad watching semaphore fd. exiting.");
+    return nullptr;
+  }
 
   bool init = false;
   while (true) {
