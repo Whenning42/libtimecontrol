@@ -1,5 +1,10 @@
+.venv/*
+.env
 libtimecontrol/lib/*
 libtimecontrol/bin/*
 build/*
 dist/*
 todo.txt
+.dockerignore
+dockerfile
+publish.sh

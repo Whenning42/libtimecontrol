@@ -1,3 +1,5 @@
+.venv/*
+.env
 libtimecontrol/lib/*
 libtimecontrol/bin/*
 build/*
