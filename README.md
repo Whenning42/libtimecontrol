@@ -1,62 +1,101 @@
-# Libtimecontrol
-
 Libtimecontrol lets you control the rate at which time runs in a Linux child process.
+Note: This is an experimental library with some known issues (see "known issues" for
+details.)
 
-# Usage
 
-Install with:
+## Installation
 
 ``` bash
 $ pip install libtimecontrol 
 ```
 
-Run with:
+
+## Usage
 
 ``` python
 import os
 import subprocess
 
-from time_control import TimeController
+from libtimecontrol import TimeController
 
-controller = TimeController(0)
+# TimeControllers run on "time channels" which are non-negative int32 values that the
+# time controlling and time controlled processes use to coordinate their inter-process
+# comminucation. All time controllers should get their own time channel. As many time
+# controlled processes as you desire can listen to a time channel.
+time_channel = 0
+controller = TimeController(time_channel)
+
+# Make time run 25x faster in child processes.
 controller.set_speedup(25)
+
+# Launch a time controlled child process.
+# Due to limitations on time controlling, the watch interval and date output aren't
+# affected by the time control. However watch's process time is correctly time
+# controlled which can be seen by how quickly watch's printed time, seen in the top
+# right corner of its output, is moving.
 env = os.environ
 subprocess.run(
-    "watch -n .2 'date'",
+    "watch -n1 date"
     env=env | controller.child_flags(),
     shell=True,
 )
 ```
 
-# How it works
 
-- Uses LD_PRELOAD and dlsym overrides
-- Calculates what time should be given the history of `set_speed()` calls.
-- Uses a seqlocked clock state to get re-entrant and thus async-signal safe time
-functions.
+## How it works
+
+We use LD_PRELOAD to override the libc time functions with custom ones that read virtual
+clocks. The virtual clocks are initialized to match the system's real clocks when a
+program loads. After that, the virtual clocks advance relative to the real clock by
+the value of the last `set_speed`'s `speedup` value, starting with a speedup of 1.
 
 
-# Potential Gotchas
+## Known Issues
 
-- Will dump "ERROR: ld.so: object '/home/william/Workspaces/libtimecontrol/libtimecontrol/lib/libtime_control32_dlsym.so' from LD_PRELOAD cannot be preloaded (wrong ELF class: ELFCLASS32): ignored." errors to the console. These are
-expected and come from us providing 32 and 64 bit libraries to LD_PRELOAD to handle
-either case in child applications.
+### Noise in your stdout
 
-- Dlsym overriding is a tricky thing. I recommend putting this library as the first
-LD_PREOLOAD in a chain if you're running multiple dlsym overriding LD_PRELOAD libraries
-at once. This library should correctly dispatch to other LD_PRELOAD `dlsyms` whereas
-other dlsym LD_PRELOAD libraries may skip other `dlsyms` in the LD_PRELOAD chain instead
-dispatching directly to libc.
+Preloading the 32-bit and 64-bit time control libraries at the
+same time will dump "ERROR: ld.so: object '.../libtime_control32_dlsym.so' from LD_PRELOAD
+cannot be preloaded (wrong ELF class: ELFCLASS32): ignored." errors to the console.
+These can safely be ignored, but they do add noise to your logs.
 
-- Correctness issues:
-  - All controlled descendant processes inherit the time controller's current speedup,
-    but also the real clock's current time at the point where they launch. This means
-    descendant processes started at different points in time will have skewed clocks.
-  - Sleep durations aren't changed for threads that are mid-sleep when setting a new
-    speedup. Keep this in mind when setting speedup to very slow values as subsequent
-    sleep calls can last far longer than the program spends at that speedup value.
-  - No libc timeout values are affected by this program, so any programs like `watch`,
-    that use timeouts to time their loops are unaffected.
+### Multiple Dlsym Overrides in LD_PRELOAD
 
-Still, even with these limitations, I find the library is effective for my use case,
-of hiding latency between asynchronous agents and closed source games.
+When running in the DLSYM preload mode, this library may be ignored if other libraries
+in your LD_PRELOAD are also performing dlsym-based overrides. If you encounter this
+error, try putting this library's preloads in front of any other LD_PRELOAD libraries,
+as I've tried to make this library correctly invoke the next dlsym in the preload chain,
+when there is one.
+
+### Correctness issues
+
+There are a few cases where the time control behavior isn't quite correct. Issues 1 and
+2 below could be addressed with more work, but issue 3 is somewhat intractable in
+general. In either case though, I don't plan on implementing fixes or accepting pull
+requests at this time. However, do feel free to fork the project if you want to fix
+these things.
+
+1. Per-process virtual clocks can be skewed relative to each other, since each process's
+virtual clock starts at the real-clock's time when a time controlled process launches.
+This could be fixed by storing the virtual clock in across processes in shared memory.
+
+2. Each sleep's duration is calculated at sleep time and any calls to `set_speedup`
+don't update any ongoing sleep's duration. This means if you call `set_speedup(.01)` and
+`sleep(1)`, the thread will sleep for 100 seconds, even if you call `set_speedup(2)` a
+second after the `sleep` call. This could be fixed by making the sleep implementation
+listen for speedup changes.
+
+3. No timeout parameters in libc are affected by the time control. This means a call
+like `select(..., /*timeout=*/one_sec)` will run with a one second timeout regardless
+of the set speedup. This is why for example `watch`'s watch interval is unaffected by
+the time control, it uses a select timeout for timing itself. One could update this
+library so that it adjusts all of the timeouts, but it's not clear that that wouldn't
+affect programs' stability.
+
+
+## Related Projects
+
+[Libfaketime](https://github.com/wolfcw/libfaketime) is a more mature and featureful
+library for faking a process's time, however the implementation appears to be slower
+for realtime use cases (TODO: Microbenchmark the two libraries to confirm or refute
+this).
