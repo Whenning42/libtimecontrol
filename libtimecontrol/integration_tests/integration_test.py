@@ -7,7 +7,8 @@ import random
 import subprocess
 
 from path import PACKAGE_ROOT
-from time_control import PreloadMode, TimeController
+
+from libtimecontrol import PreloadMode, TimeController
 
 
 def run_program(name, duration, env_vars):
