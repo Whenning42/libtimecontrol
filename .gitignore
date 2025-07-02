@@ -5,3 +5,5 @@ libtimecontrol/bin/*
 build/*
 dist/*
 todo.txt
+libtimecontrol/microbenchmark/out/*
+libtimecontrol/microbenchmark/bench
