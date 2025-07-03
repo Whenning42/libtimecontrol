@@ -1,7 +1,7 @@
 # Microbenchmark for time read and writes using glibc, libtimecontrol, and libfaketime.
 
+import atexit
 import os
-import shutil
 import statistics
 import subprocess
 import time
@@ -10,7 +10,7 @@ from pathlib import Path
 BENCH_BIN = "./microbenchmark/bench"
 BENCH_SRC = "microbenchmark/bench.c"
 WRITE_PERIOD_SEC = 0.03
-BENCHMARK_LENGTH = 15
+BENCHMARK_LENGTH = 4
 
 
 def parse_bench_output(txt: str):
@@ -36,12 +36,13 @@ def stats(us_list):
     )
 
 
-def run_glibc():
+def run_glibc(sleep_writer: bool):
+    del sleep_writer
     env = os.environ.copy()
-    return launch_variant("glibc", env, None)
+    return launch_benchmark("glibc", env, None, False)
 
 
-def run_libtimecontrol():
+def run_libtimecontrol(sleep_writer: bool):
     from libtimecontrol import TimeController
 
     tc = TimeController(0)
@@ -53,10 +54,10 @@ def run_libtimecontrol():
         end = time.perf_counter_ns()
         rec.append((end - start) / 1000.0)  # to µs
 
-    return launch_variant("libtimecontrol", env, writer)
+    return launch_benchmark("libtimecontrol", env, writer, sleep_writer)
 
 
-def run_libtimecontrol_cffi_ext():
+def run_libtimecontrol_cffi_ext(sleep_writer: bool):
     from _time_control.lib import set_speedup
 
     from libtimecontrol import TimeController
@@ -70,12 +71,11 @@ def run_libtimecontrol_cffi_ext():
         end = time.perf_counter_ns()
         rec.append((end - start) / 1000.0)  # to µs
 
-    return launch_variant("libtimecontrol cffi ext", env, writer)
+    return launch_benchmark("libtimecontrol cffi ext", env, writer, sleep_writer)
 
 
-def run_libfaketime():
-    # locate libfaketime.so*
-    lib = shutil.which("libfaketime.so.1") or "/usr/lib/faketime/libfaketime.so.1"
+def run_libfaketime(sleep_writer: bool):
+    lib = "/usr/lib/faketime/libfaketime.so.1"
     if not Path(lib).exists():
         raise ValueError("ERROR: libfaketime not found. Exiting")
 
@@ -95,24 +95,43 @@ def run_libfaketime():
         end = time.perf_counter_ns()
         rec.append((end - start) / 1000.0)
 
-    return launch_variant("libfaketime", env, writer)
+    def at_exit():
+        try:
+            Path(ts_file).unlink()
+            Path(ts_file_2).unlink()
+        except:  # noqa: E722 (Allow bare exception).
+            pass
+
+    atexit.register(at_exit)
+
+    return launch_benchmark("libfaketime", env, writer, sleep_writer)
 
 
-def launch_variant(name, env, writer_fn):
+def launch_benchmark(name, env, writer_fn, sleep_writer):
     p = subprocess.Popen(
-        [BENCH_BIN], stdout=subprocess.PIPE, stderr=subprocess.PIPE, env=env, text=True
+        [BENCH_BIN],
+        stdout=subprocess.PIPE,
+        env=env,
+        text=True,
     )
+
+    import sys
 
     write_times = []
     if writer_fn:
+        print(f"Starting {name} writes", flush=True, file=sys.stderr)
         start = time.time()
         while time.time() - start < BENCHMARK_LENGTH:
             writer_fn(write_times)
-            time.sleep(WRITE_PERIOD_SEC)
+            if sleep_writer:
+                time.sleep(WRITE_PERIOD_SEC)
+            else:
+                for i in range(int(30_000_000 * WRITE_PERIOD_SEC)):
+                    pass
+        print(f"Ending {name} writes", flush=True, file=sys.stderr)
     write_times = write_times[1:]
 
     stdout, _ = p.communicate()
-
     num_reads, avg_r, max_r = parse_bench_output(stdout)
     return {
         "variant": name,
@@ -122,23 +141,25 @@ def launch_variant(name, env, writer_fn):
 
 
 def main():
-    variants = [
-        run_glibc(),
-        run_libtimecontrol(),
-        run_libtimecontrol_cffi_ext(),
-        run_libfaketime(),
-    ]
+    for sleep_writer in [False, True]:
+        print(f"======== Benchmarks With Busy Write Loop: {not sleep_writer} ========")
+        benchmarks = [
+            run_glibc(sleep_writer),
+            run_libtimecontrol(sleep_writer),
+            run_libtimecontrol_cffi_ext(sleep_writer),
+            run_libfaketime(sleep_writer),
+        ]
 
-    for res in variants:
-        n_w, avg_w, max_w = res["writes"]
-        n_r, avg_r, max_r = res["reads"]
-        print(f"{res['variant']} ubenchmark:")
-        print(f"  num_of_writes: {n_w}")
-        print(f"  average_write_time: {avg_w:.3f} usec")
-        print(f"  max_write_time: {max_w:.3f} usec")
-        print(f"  num_of_reads: {n_r}")
-        print(f"  average_read_time: {avg_r:.3f} usec")
-        print(f"  max_read_time: {max_r:.3f} usec\n")
+        for res in benchmarks:
+            n_w, avg_w, max_w = res["writes"]
+            n_r, avg_r, max_r = res["reads"]
+            print(f"{res['variant']} ubenchmark:")
+            print(f"  num_of_writes: {n_w}")
+            print(f"  average_write_time: {avg_w:.3f} usec")
+            print(f"  max_write_time: {max_w:.3f} usec")
+            print(f"  num_of_reads: {n_r}")
+            print(f"  average_read_time: {avg_r:.3f} usec")
+            print(f"  max_read_time: {max_r:.3f} usec\n")
 
 
 if __name__ == "__main__":
