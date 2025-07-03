@@ -1,6 +1,6 @@
 #include <gtest/gtest.h>
 
-#include "time_control.h"
+#include "time_reader.inl"
 
 int32_t kTestChannel = -1;
 

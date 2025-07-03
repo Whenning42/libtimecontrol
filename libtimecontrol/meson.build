@@ -12,15 +12,16 @@ common_cpp = ['-march=native', '-O3']
 
 # Libs
 variants = [
-  {'name':'time_control', 'cpp': common_cpp},
-  {'name':'time_control32', 'cpp': common_cpp + ['-m32'], 'link': ['-m32']},
-  {'name':'time_control_dlsym', 'cpp': common_cpp + ['-DDLSYM_OVERRIDE']},
-  {'name':'time_control_dlsym32', 'cpp': common_cpp + ['-m32', '-DDLSYM_OVERRIDE'], 'link': ['-m32']},
+  {'name':'time_controller', 'source': ['time_writer.cpp'], 'cpp': common_cpp},
+  {'name':'time_control', 'source': ['time_reader.cpp'], 'cpp': common_cpp},
+  {'name':'time_control32', 'source': ['time_reader.cpp'], 'cpp': common_cpp + ['-m32'], 'link': ['-m32']},
+  {'name':'time_control_dlsym', 'source': ['time_reader.cpp'], 'cpp': common_cpp + ['-DDLSYM_OVERRIDE']},
+  {'name':'time_control_dlsym32', 'source': ['time_reader.cpp'], 'cpp': common_cpp + ['-m32', '-DDLSYM_OVERRIDE'], 'link': ['-m32']},
 ]
 
 foreach v : variants
   shared_library(
-    v['name'], 'time_control.cpp',
+    v['name'], v['source'],
     dependencies: lib_deps,
     cpp_args: v.get('cpp', []),
     link_args: v.get('link', []),

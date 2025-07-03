@@ -15,7 +15,7 @@ class TimeController:
         self.channel = channel
         self.preload_mode = preload_mode
 
-        lib_path = PACKAGE_ROOT + "/lib/libtime_control.so"
+        lib_path = PACKAGE_ROOT + "/lib/libtime_controller.so"
         ffi = FFI()
         ffi.cdef("void set_speedup(float speedup, int32_t channel);")
         self.libtime_control = ffi.dlopen(lib_path)

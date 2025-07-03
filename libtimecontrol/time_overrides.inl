@@ -4,6 +4,7 @@
 #include <stdint.h>
 #include <sys/time.h>
 
+#include "constants.h"
 #include "time_operators.h"
 #include "time_overrides.h"
 #include "clock_state.h"
