@@ -96,6 +96,7 @@ affect programs' stability.
 ## Related Projects
 
 [Libfaketime](https://github.com/wolfcw/libfaketime) is a more mature and featureful
-library for faking a process's time, however the implementation appears to be slower
-for realtime use cases (TODO: Microbenchmark the two libraries to confirm or refute
-this).
+library for faking a process's time, but it's primarily designed around fixed time
+offsets or speedups. It can support realtime time updates with "FAKETIME_NO_CACHE=1" and
+"FAKETIME_XRESET=1", but the XRESET mode is experimental and the library has slower
+performance when running in this mode.
