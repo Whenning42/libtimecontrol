@@ -265,9 +265,3 @@ namespace testing {
     return (::real_clock_gettime.load())(clkid, t);
   }
 }  // namespace testing
-
-__attribute__((constructor))
-void init() {
-  InitPFNs pfns;
-  init_speedup();
-}

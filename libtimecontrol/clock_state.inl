@@ -7,13 +7,15 @@
 #include <sys/mman.h>
 #include <sys/stat.h>
 #include <unistd.h>
-#include <unordered_map>
+#include <vector>
 
 #include "clock_state.h"
 #include "time_overrides.h"
 
 const char* default_channel = "-1";
 const char* time_channel_env_var = "TIME_CONTROL_CHANNEL";
+
+// TODO: Try cleaning up all shm and sem files on exit.
 
 namespace {
 // Seqlocked clock state.
@@ -29,7 +31,7 @@ float get_speedup() {
 }
 
 void get_shm_path(int32_t channel, char buf[128]) {
-  snprintf(buf, 128, "time_control_sem_%d", channel);
+  snprintf(buf, 128, "time_control_shm_%d", channel);
 }
 
 void get_sem_name(int32_t channel, char buf[128]) {
@@ -42,11 +44,18 @@ void get_sem_name(int32_t channel, char buf[128]) {
   snprintf(buf, 128, "%s/time_control/fifo_%d", runtime_dir, channel);
 }
 
-int fsem_open_writer(const char* name) {
+int fsem_try_open_writer(const char* name) {
   // We expect the semaphore to be unavailable until the child starts, so we ignore
   // semaphore open errors.
   int fd = open(name, O_WRONLY | O_NONBLOCK);
   return fd;
+}
+
+int fsem_try_open_writer_channel(int32_t channel) {
+  fprintf(stderr, "Opening writer sem\n");
+  char sem_path[128];
+  get_sem_name(channel, sem_path);
+  return fsem_try_open_writer(sem_path);
 }
 
 int fsem_open_reader(const char* name) {
@@ -98,23 +107,53 @@ void* get_channel_mmap(const int32_t channel) {
   return map;
 }
 
-extern "C" void set_speedup(float speedup, int32_t channel) {
-  void* map = get_channel_mmap(channel);
-  char sem_path[128];
-  get_sem_name(channel, sem_path);
-  int fsem = fsem_open_writer(sem_path);
 
-  ((std::atomic<float>*)(map))->store(speedup);
-  msync(map, sizeof(float), MS_SYNC);
-  if (fsem != -1) {
-    fsem_post(fsem);
+struct conn {
+  int32_t channel;
+  void* mmap;
+  int fsem;
+};
+extern "C" void set_speedup(float speedup, int32_t channel) {
+  static std::vector<conn> conns;
+
+  conn* c = nullptr;
+  for (size_t i = 0; i < conns.size(); ++i) {
+    if (conns[i].channel == channel) {
+      c = &conns[i];
+      break;
+    }
   }
+
+  if (c == nullptr) {
+    conn new_c;
+    new_c.channel = channel;
+    new_c.mmap = get_channel_mmap(channel);
+    new_c.fsem = fsem_try_open_writer_channel(channel);
+    conns.emplace_back(std::move(new_c));
+    c = &conns.back();
+  }
+  if (c->fsem == -1) {
+    c->fsem = fsem_try_open_writer_channel(channel);
+  }
+
+  if (!c) {
+    perror("connection");
+    return;
+  }
+  if (!c->mmap) {
+    perror("mmap");
+    return;
+  }
+  if (!c->fsem) {
+    perror("fsem");
   return;
 }
 
-bool get_new_speed(float* new_speed) {
-  *new_speed = get_speedup();
-  return true;
+  ((std::atomic<float>*)(c->mmap))->store(speedup);
+  msync(c->mmap, sizeof(float), MS_SYNC);
+  if (c->fsem != -1) {
+    fsem_post(c->fsem);
+  }
 }
 
 void* watch_speed(void*) {
@@ -131,13 +170,7 @@ void* watch_speed(void*) {
     return nullptr;
   }
 
-  bool init = false;
   while (true) {
-    if (init) {
-      fsem_wait(fsem);
-    }
-    init = true;
-
     const float read_speedup = ((std::atomic<float>*)map)->load();
     const float old_speedup = speedup.load();
     if (read_speedup != old_speedup) {
@@ -151,6 +184,8 @@ void* watch_speed(void*) {
       update_speedup(read_speedup, &clocks[read_idx], &clocks[write_idx]);
       clock_id.store(start_id + 2);
     }
+
+    fsem_wait(fsem);
   }
   return nullptr;
 }
