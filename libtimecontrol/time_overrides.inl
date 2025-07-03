@@ -134,6 +134,7 @@ int base_clock(int clkid) {
 }
 
 timespec fake_time_impl(int clk_id, const ClockState* clock) {
+  LAZY_LOAD_REAL(clock_gettime);
   clk_id = base_clock(clk_id);
   timespec real;
   (real_clock_gettime.load())(clk_id, &real);
@@ -141,36 +142,21 @@ timespec fake_time_impl(int clk_id, const ClockState* clock) {
   return clock->clock_origins_fake[clk_id] + real_delta * clock->speedup;
 }
 
-template<typename T, T(*f)(int, const ClockState*)>
-T do_fake_time_fn(int clk_id) {
+timespec fake_time(int clk_id) {
   clk_id = base_clock(clk_id);
 
   // Read section
   uint64_t used_clock;
   uint64_t current_clock;
-  T val;
+  timespec val;
   do {
     used_clock = clock_id.load();
     uint64_t used_clock_idx = (used_clock / 2) % 2;
-    val = f(clk_id, &clocks[used_clock_idx]);
+    val = fake_time_impl(clk_id, &clocks[used_clock_idx]);
     current_clock = clock_id.load();
   } while (used_clock % 2 == 1 || current_clock % 2 == 1 || used_clock != current_clock);
 
   return val;
-}
-
-timespec get_time(int clk_id, const ClockState* clock_state) {
-    return fake_time_impl(clk_id, clock_state);
-}
-timespec fake_time(int clk_id) {
-  return do_fake_time_fn<timespec, get_time>(clk_id);
-}
-
-float get_speedup(__attribute__((unused)) int clk_id, const ClockState* clock_state) {
-  return clock_state->speedup;
-}
-float current_speedup(int clk_id) {
-  return do_fake_time_fn<float, get_speedup>(clk_id);
 }
 }  // namespace
 
@@ -247,7 +233,7 @@ unsigned int sleep(unsigned int seconds) {
 
 int clock_nanosleep(clockid_t clockid, int flags, const struct timespec* t, struct timespec* rem) {
   LAZY_LOAD_REAL(clock_nanosleep);
-  const float speedup = current_speedup(clockid);
+  const float speedup = get_speedup();
 
   timespec req_sleep;
   if (flags == TIMER_ABSTIME) {
