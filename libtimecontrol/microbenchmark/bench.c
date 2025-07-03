@@ -18,7 +18,7 @@
 #include <time.h>
 #include <sys/time.h>
 
-const double kBenchmarkLength = 15;
+const double kBenchmarkLength = 5;
 
 static inline uint64_t nsec_diff(const struct timespec *a,
                                  const struct timespec *b)
