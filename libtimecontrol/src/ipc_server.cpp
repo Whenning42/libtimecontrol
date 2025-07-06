@@ -89,7 +89,6 @@ Server& global_server() {
   static Server server = Server();
   return server;
 }
-// TODO: Don't return until server is fully initialized.
 void start_global_server() {
   std::thread server_thread = std::thread([](){ global_server().serve(); });
   server_thread.detach();
