@@ -57,22 +57,28 @@ void Server::serve() {
           }
           break;
         } else {
-          log("Accepting connection");
-          int connection = accept(p.fd, nullptr, nullptr);
           IpcWriter* writer = nullptr;
           {
             std::lock_guard<std::mutex> l(sockets_to_writers_mu_);
             auto it = sockets_to_writers_.find(p.fd);
-            if (it != sockets_to_writers_.end()) {
-              writer = it->second;
+            if (it == sockets_to_writers_.end()) {
+              continue;
             }
-          }
-          if (!writer) {
-            continue;
+            writer = it->second;
           }
 
-          writer->add_reader(connection);
-          p.revents = 0;
+          log("Accepting connection");
+          int connection = accept(p.fd, nullptr, nullptr);
+          {
+            std::lock_guard<std::mutex> l(writer->connections_mu());
+            writer->connections().push_back(connection);
+          }
+          // Send handshake to client.
+          uint8_t h = 0;
+          r = send(connection, &h, sizeof(h), 0);
+          if (r == -1) {
+            perror("Handshake send.");
+          }
         }
       }
     }
@@ -83,6 +89,7 @@ Server& global_server() {
   static Server server = Server();
   return server;
 }
+// TODO: Don't return until server is fully initialized.
 void start_global_server() {
   std::thread server_thread = std::thread([](){ global_server().serve(); });
   server_thread.detach();

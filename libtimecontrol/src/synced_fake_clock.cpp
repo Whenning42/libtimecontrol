@@ -60,9 +60,6 @@ timespec SyncedFakeClock::clock_gettime(clockid_t clock_id) const{
   real_clock_gettime.load()(clock_id, &real_time);
 
   auto [real_base, fake_base] = state.clock_baselines[clock_id];
-
-
-  log("Real base: %lf, fake base: %lf, speedup: %f", timespec_to_sec(real_base), timespec_to_sec(fake_base), state.speedup);
   return fake_base + (double)state.speedup * (real_time - real_base);
 }
 
@@ -84,6 +81,7 @@ std::array<std::pair<timespec, timespec>, 4> SyncedFakeClock::get_new_baselines(
 }
 
 void SyncedFakeClock::watch_speedup() {
+  log("Running a watch speedup loop");
   float read_speedup;
   sync_reader_.read_non_blocking(&read_speedup, sizeof(read_speedup));
   log("Read initial speedup: %f", read_speedup);
@@ -94,4 +92,15 @@ void SyncedFakeClock::watch_speedup() {
     log("Read speedup: %f", read_speedup);
     set_speedup(read_speedup);
   }
+}
+
+SyncedFakeClock& fake_clock() {
+  static SyncedFakeClock c;
+  return c;
+}
+
+void start_fake_clock() {
+  SyncedFakeClock& c = fake_clock();
+  std::thread t = std::thread([&c](){ c.watch_speedup(); });
+  t.detach();
 }

@@ -150,6 +150,15 @@ IpcReader::IpcReader(int32_t channel, std::size_t mmap_size):
     perror("connect");
     exit(1);
   }
+  
+  // Wait for handshake from server.
+  uint8_t h;
+  r = recv(socket_, &h, 1, 0);
+  if (r == -1) {
+    perror("Handshake recv.");
+    exit(1);
+  }
+
   log("Reader connected on socket: %d", socket_);
   log("Created reader on channel: %d with socket: %d", channel_, socket_);
 }
@@ -157,7 +166,7 @@ IpcReader::IpcReader(std::size_t mmap_size): IpcReader(get_channel(), mmap_size)
 IpcReader::~IpcReader() { /* TODO: Cleanup? */ }
 
 bool IpcReader::read(void* out_data, std::size_t max_size) {
-  log("Reading on channel: %d", channel_);
+  log("Reading on channel: %d, socket: %d", channel_, socket_);
   char val;
   recv(socket_, &val, 1, 0);
   return read_non_blocking(out_data, max_size);

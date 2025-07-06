@@ -21,10 +21,8 @@ class IpcWriter {
     ~IpcWriter();
 
     bool write(const void* data, std::size_t size);
-    void add_reader(int reader_socket) {
-      std::lock_guard<std::mutex> l(connections_lock_);
-      reader_connections_.push_back(reader_socket);
-    }
+    std::mutex& connections_mu() { return connections_lock_; }
+    std::vector<int>& connections() { return reader_connections_; }
     int server_socket() const { return server_socket_; }
     int32_t channel() const { return channel_; }
     std::size_t mmap_size() const { return mmap_size_; }

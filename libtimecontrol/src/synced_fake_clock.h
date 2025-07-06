@@ -33,12 +33,5 @@ class SyncedFakeClock {
   SeqLock<ClockState> clock_state_;
 };
 
-inline SyncedFakeClock& fake_clock() {
-  static SyncedFakeClock c;
-  return c;
-}
-
-inline void start_fake_clock() {
-  std::thread t = std::thread([](){ fake_clock().watch_speedup(); });
-  t.detach();
-}
+SyncedFakeClock& fake_clock();
+void start_fake_clock();
