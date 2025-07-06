@@ -1,5 +1,3 @@
-#include "src/time_control.h"
-
 #include <gtest/gtest.h>
 
 #include "src/constants.h"
@@ -97,21 +95,20 @@ TEST_F(TimeControlTest, Clock) {
 
   SetSpeedup(1);
   start_1 = clock();
-  for (int i = 0; i < .2 * kMillion; ++i) {
+  for (int i = 0; i < .5 * kBillion; ++i) {
     acc += i * 57 + 3;
   }
   end_1 = clock();
 
   SetSpeedup(10);
   start_2 = clock();
-  for (int i = 0; i < .2 * kMillion; ++i) {
+  for (int i = 0; i < .5 * kBillion; ++i) {
     acc += i * 57 + 3;
   }
   end_2 = clock();
 
   double time_1 = (double)(end_1 - start_1) / CLOCKS_PER_SEC;
   double time_2 = (double)(end_2 - start_2) / CLOCKS_PER_SEC;
-  // For some reason the error here tends to be large.
   EXPECT_NEAR(time_2 / time_1, 10, 5);
 }
 

@@ -5,7 +5,7 @@
 
 #include "src/ipc.h"
 #include "src/test_environment.h"
-#include "src/time_control.h"
+#include "src/time_writer.h"
 #include "src/constants.h"
 
 

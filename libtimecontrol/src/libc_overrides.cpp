@@ -1,5 +1,7 @@
 #include "src/libc_overrides.h"
 
+#include <cassert>
+#include <cstring>
 #include <dlfcn.h>
 #include <stdint.h>
 #include <sys/time.h>

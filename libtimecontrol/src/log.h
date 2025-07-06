@@ -14,8 +14,8 @@ inline void log(const char* fmt, ...) {
   va_start(args, fmt);
   std::ostringstream oss;
   oss << std::this_thread::get_id();
-  fprintf(stdout, "%s: ", oss.str().c_str());
-  vfprintf(stdout, fmt, args);
-  fprintf(stdout, "\n");
+  fprintf(stderr, "%s: ", oss.str().c_str());
+  vfprintf(stderr, fmt, args);
+  fprintf(stderr, "\n");
   va_end(args);
 }
