@@ -7,4 +7,4 @@ meson setup . build -Dlibdir=$SCRIPT_DIR/libtimecontrol/lib -Dbindir=$SCRIPT_DIR
 cd build
 ninja
 meson install
-meson test
+meson test --print-errorlog
