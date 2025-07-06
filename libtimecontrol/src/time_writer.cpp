@@ -22,5 +22,5 @@ extern "C" void set_speedup(float speedup, int32_t channel) {
 
 InitForWriting::InitForWriting() {
   start_global_server();
-  set_speedup(/*speedup=*/1, /*channel=*/-1);
+  set_speedup(/*speedup=*/1, /*channel=*/get_channel());
 }

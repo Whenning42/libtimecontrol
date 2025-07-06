@@ -11,6 +11,7 @@
 
 #include "src/ipc_server.h"
 
+int32_t get_channel();
 
 class IpcWriter {
  public:

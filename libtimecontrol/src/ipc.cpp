@@ -31,15 +31,6 @@ std::map<int, IpcWriter*>& sockets_to_writers() {
   return v;
 }
 
-int32_t get_channel() {
-  const char* default_channel = "-1";
-  const char* time_channel_env_var = "TIME_CONTROL_CHANNEL";
-  const char* channel_var = getenv(time_channel_env_var);
-  channel_var = channel_var ? channel_var : default_channel;
-  log("Getting channel: %d", std::stoi(channel_var));
-  return std::stoi(channel_var);
-}
-
 constexpr size_t kBufSize = 108;
 void make_socket_path(int32_t channel, char buf[kBufSize]) {
   const char* runtime_dir = getenv("XDG_RUNTIME_DIR");
@@ -59,6 +50,15 @@ void make_socket_path(int32_t channel, char buf[kBufSize]) {
   snprintf(buf, kBufSize, "%s/time_control/fifo_%d", runtime_dir, channel);
 }
 } // namespace
+
+int32_t get_channel() {
+  const char* default_channel = "-1";
+  const char* time_channel_env_var = "TIME_CONTROL_CHANNEL";
+  const char* channel_var = getenv(time_channel_env_var);
+  channel_var = channel_var ? channel_var : default_channel;
+  log("Getting channel: %d", std::stoi(channel_var));
+  return std::stoi(channel_var);
+}
 
 // ================================= IpcWriter =================================
 IpcWriter::IpcWriter(int32_t channel, std::size_t mmap_size):
