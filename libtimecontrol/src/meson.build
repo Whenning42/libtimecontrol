@@ -8,7 +8,7 @@ lgtest_main_dep = cc.find_library('gtest_main')
 
 
 lib_deps = [ldl_dep, latomic_dep, thread_dep, lrt_dep]
-common_cpp = ['-march=native', '-O2']
+common_cpp = []
 
 inc = include_directories('../')
 
