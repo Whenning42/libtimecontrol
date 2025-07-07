@@ -67,13 +67,11 @@ error, try putting this library's preloads in front of any other LD_PRELOAD libr
 as I've tried to make this library correctly invoke the next dlsym in the preload chain,
 when there is one.
 
-### Correctness issues
+### Edge Cases
 
-There are a few cases where the time control behavior isn't quite correct. Issues 1 and
-2 below could be addressed with more work, but issue 3 is somewhat intractable in
-general. In either case though, I don't plan on implementing fixes or accepting pull
-requests at this time. However, do feel free to fork the project if you want to fix
-these things.
+There are a few cases where the time control behavior isn't quite correct. I don't plan
+on implementing fixes or reviewing/accepting pull requests for these, but do feel free
+to fork the project if you want to fix these things.
 
 1. Per-process virtual clocks can be skewed relative to each other, since each process's
 virtual clock starts at the real-clock's time when a time controlled process launches.
@@ -95,8 +93,6 @@ affect programs' stability.
 
 ## Related Projects
 
-[Libfaketime](https://github.com/wolfcw/libfaketime) is a more mature and featureful
-library for faking a process's time, but it's primarily designed around fixed time
-offsets or speedups. It can support realtime time updates with "FAKETIME_NO_CACHE=1" and
-"FAKETIME_XRESET=1", but the XRESET mode is experimental and the library has slower
-performance when running in this mode.
+[Libfaketime](https://github.com/wolfcw/libfaketime) is another project that fakes a
+processes time. It's more mature, but isn't as focused on realtime time control.
+
