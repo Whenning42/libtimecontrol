@@ -6,4 +6,4 @@
 InitForReading::InitForReading() {
   InitPFNs init_pfns;
   start_fake_clock();
-};
+}
