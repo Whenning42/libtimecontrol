@@ -90,19 +90,19 @@ TEST_F(TimeControlTest, ClockGettimeWallClocks) {
 
 // Clock measures process time, not wall time.
 TEST_F(TimeControlTest, Clock) {
-  int acc = 0;
+  volatile int64_t acc = 0;
   clock_t start_1, end_1, start_2, end_2;
 
   SetSpeedup(1);
   start_1 = clock();
-  for (int i = 0; i < .5 * kBillion; ++i) {
+  for (int64_t i = 0; i < .5 * kBillion; ++i) {
     acc += i * 57 + 3;
   }
   end_1 = clock();
 
   SetSpeedup(10);
   start_2 = clock();
-  for (int i = 0; i < .5 * kBillion; ++i) {
+  for (int64_t i = 0; i < .5 * kBillion; ++i) {
     acc += i * 57 + 3;
   }
   end_2 = clock();
