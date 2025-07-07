@@ -1,32 +1,67 @@
+======== Benchmarks With Busy Write Loop: True ========
 glibc ubenchmark:
   num_of_writes: 0
   average_write_time: 0.000 usec
   max_write_time: 0.000 usec
-  num_of_reads: 89779461
+  num_of_reads: 29758065
   average_read_time: 0.083 usec
-  max_read_time: 330.403 usec
+  max_read_time: 99.796 usec
 
 libtimecontrol ubenchmark:
-  num_of_writes: 496
-  average_write_time: 41.748 usec
-  max_write_time: 257.244 usec
-  num_of_reads: 33418792
-  average_read_time: 0.175 usec
-  max_read_time: 362.452 usec
+  num_of_writes: 96
+  average_write_time: 13.906 usec
+  max_write_time: 41.891 usec
+  num_of_reads: 9559770
+  average_read_time: 0.203 usec
+  max_read_time: 65.162 usec
 
 libtimecontrol cffi ext ubenchmark:
-  num_of_writes: 496
-  average_write_time: 37.275 usec
-  max_write_time: 78.822 usec
-  num_of_reads: 33426573
-  average_read_time: 0.175 usec
-  max_read_time: 48.664 usec
+  num_of_writes: 96
+  average_write_time: 13.076 usec
+  max_write_time: 34.979 usec
+  num_of_reads: 9518068
+  average_read_time: 0.204 usec
+  max_read_time: 76.444 usec
 
 libfaketime ubenchmark:
-  num_of_writes: 492
-  average_write_time: 292.006 usec
-  max_write_time: 1034.060 usec
-  num_of_reads: 956666
-  average_read_time: 7.840 usec
-  max_read_time: 177.070 usec
+  num_of_writes: 76
+  average_write_time: 91.518 usec
+  max_write_time: 290.432 usec
+  num_of_reads: 227978
+  average_read_time: 10.964 usec
+  max_read_time: 77.193 usec
 
+======== Benchmarks With Busy Write Loop: False ========
+glibc ubenchmark:
+  num_of_writes: 0
+  average_write_time: 0.000 usec
+  max_write_time: 0.000 usec
+  num_of_reads: 29837191
+  average_read_time: 0.083 usec
+  max_read_time: 73.471 usec
+
+libtimecontrol ubenchmark:
+  num_of_writes: 132
+  average_write_time: 23.164 usec
+  max_write_time: 289.831 usec
+  num_of_reads: 10370663
+  average_read_time: 0.184 usec
+  max_read_time: 74.146 usec
+
+libtimecontrol cffi ext ubenchmark:
+  num_of_writes: 132
+  average_write_time: 23.008 usec
+  max_write_time: 264.653 usec
+  num_of_reads: 10426192
+  average_read_time: 0.184 usec
+  max_read_time: 104.915 usec
+
+libfaketime ubenchmark:
+  num_of_writes: 132
+  average_write_time: 107.724 usec
+  max_write_time: 299.636 usec
+  num_of_reads: 316278
+  average_read_time: 7.903 usec
+  max_read_time: 88.799 usec
+
+Running benchmark harness.

@@ -4,10 +4,11 @@ import atexit
 import os
 import statistics
 import subprocess
+import sys
 import time
 from pathlib import Path
 
-BENCH_BIN = "./microbenchmark/bench"
+BENCH_BIN = "./microbenchmark/out/bench"
 BENCH_SRC = "microbenchmark/bench.c"
 WRITE_PERIOD_SEC = 0.03
 BENCHMARK_LENGTH = 4
@@ -108,14 +109,13 @@ def run_libfaketime(sleep_writer: bool):
 
 
 def launch_benchmark(name, env, writer_fn, sleep_writer):
+    child_core = os.environ["CHILD_CORE"]
     p = subprocess.Popen(
-        [BENCH_BIN],
+        ["taskset", "-c", child_core, BENCH_BIN],
         stdout=subprocess.PIPE,
         env=env,
         text=True,
     )
-
-    import sys
 
     write_times = []
     if writer_fn:
