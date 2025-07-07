@@ -43,7 +43,7 @@ void make_socket_path(int32_t channel, char buf[kBufSize]) {
   if (r == -1 && errno == EEXIST) errno = 0;
   if (errno) {
     perror("mkdir");
-    fprintf(stderr, " for file: %s\n", fifo_dir);
+    log(" for file: %s", fifo_dir);
   }
 
 
@@ -92,7 +92,7 @@ IpcWriter::IpcWriter(int32_t channel, std::size_t mmap_size):
 
   {
     std::lock_guard<std::mutex> l(sw_mu);
-    fprintf(stderr, "Inserting socket writer pair.\n");
+    log("Inserting socket writer pair.");
     sockets_to_writers().insert({server_socket_, this});
   }
 

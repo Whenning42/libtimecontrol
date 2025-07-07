@@ -8,6 +8,7 @@
 #include <thread>
 
 inline void log(const char* fmt, ...) {
+#ifdef DEBUG
   static std::mutex log_mu;
   std::lock_guard<std::mutex> l(log_mu);
   va_list args;
@@ -18,4 +19,8 @@ inline void log(const char* fmt, ...) {
   vfprintf(stderr, fmt, args);
   fprintf(stderr, "\n");
   va_end(args);
+#else
+  (void)fmt;
+  return;
+#endif
 }
