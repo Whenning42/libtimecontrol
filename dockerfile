@@ -8,5 +8,5 @@ RUN pipx install poetry
 
 COPY . /workspace
 WORKDIR /workspace
-RUN python3.11 -m venv .venv && source .venv/bin/activate && poetry install --no-root && ./build.sh
+RUN python3.11 -m venv .venv && source .venv/bin/activate && poetry install --no-root && ./build.sh --release
 RUN poetry build && cd dist && auditwheel repair libtimecontrol*.whl
