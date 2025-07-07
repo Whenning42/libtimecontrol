@@ -12,65 +12,46 @@
 
 
 template <typename T>
-void copy_t(const void*& from_p, void*& to_p, size_t& n) {
+void copy_t(const void*& from_p,
+            void*& to_p, 
+            size_t& n, 
+            std::memory_order store_order,
+            std::memory_order load_order) {
   const T*& from = reinterpret_cast<const T*&>(from_p);
   T*& to = reinterpret_cast<T*&>(to_p);
 
   const int B = sizeof(T);
   while (n >= B && ((uintptr_t)from % B) == 0 && ((uintptr_t)to % B) == 0) {
-    T val = __atomic_load_n(reinterpret_cast<const T*>(from), __ATOMIC_ACQUIRE);
-    __atomic_store_n(reinterpret_cast<T*>(to), val, __ATOMIC_RELEASE);
+    T val = __atomic_load_n(reinterpret_cast<const T*>(from), load_order);
+    __atomic_store_n(reinterpret_cast<T*>(to), val, store_order);
     n -= B;
     from = from + 1;
     to = to + 1;
   }
 }
 
-// inline void atomic_words_memcpy(const void* from, void* to, size_t n) {
-//   // Silence clang alignment warnings about alignment, since we check alignment in our loop.
-//   // #pragma clang diagnostic push
-//   // #pragma clang diagnostic ignored "-Watomic-alignment"
-//   if (std::atomic<uint64_t>::is_always_lock_free) {
-//     while (n >= 8 && ((uintptr_t)from & 0x7) == 0 && ((uintptr_t)to & 0x7) == 0) {
-//       using T = uint64_t;
-//       T val = __atomic_load_n(reinterpret_cast<const T*>(from), __ATOMIC_ACQUIRE);
-//       __atomic_store_n(reinterpret_cast<T*>(to), val, __ATOMIC_RELEASE);
-//       n -= sizeof(T);
-//       from = (void*)((const char*)from + sizeof(T));
-//       to = (void*)((char*)to + sizeof(T));
-//     }
-//   }
-//   // #pragma clang diagnostic pop
-//   while (n >= 4) {
-//     using T = uint32_t;
-//     T val = __atomic_load_n(reinterpret_cast<const T*>(from), __ATOMIC_ACQUIRE);
-//     __atomic_store_n(reinterpret_cast<T*>(to), val, __ATOMIC_RELEASE);
-//     n -= sizeof(T);
-//     from = (void*)((const char*)from + sizeof(T));
-//     to = (void*)((char*)to + sizeof(T));
-//   }
-//   while (n >= 2) {
-//     using T = uint16_t;
-//     T val = __atomic_load_n(reinterpret_cast<const T*>(from), __ATOMIC_ACQUIRE);
-//     __atomic_store_n(reinterpret_cast<T*>(to), val, __ATOMIC_RELEASE);
-//     n -= sizeof(T);
-//     from = (void*)((const char*)from + sizeof(T));
-//     to = (void*)((char*)to + sizeof(T));
-//   }
-//   while (n >= 1) {
-//     using T = uint8_t;
-//     T val = __atomic_load_n(reinterpret_cast<const T*>(from), __ATOMIC_ACQUIRE);
-//     __atomic_store_n(reinterpret_cast<T*>(to), val, __ATOMIC_RELEASE);
-//     n -= sizeof(T);
-//     from = (void*)((const char*)from + sizeof(T));
-//     to = (void*)((char*)to + sizeof(T));
-//   }
-// }
-inline void atomic_words_memcpy(const void* from, void* to, size_t n) {
-  copy_t<uint64_t>(from, to, n);
-  copy_t<uint32_t>(from, to, n);
-  copy_t<uint16_t>(from, to, n);
-  copy_t<uint8_t>(from, to, n);
+inline void atomic_words_memcpy(
+    const void* from, 
+    void* to, 
+    size_t n, 
+    std::memory_order store_order = std::memory_order_release, 
+    std::memory_order load_order = std::memory_order_acquire) {
+  copy_t<uint64_t>(from, to, n, store_order, load_order);
+  copy_t<uint32_t>(from, to, n, store_order, load_order);
+  copy_t<uint16_t>(from, to, n, store_order, load_order);
+  copy_t<uint8_t>(from, to, n, store_order, load_order);
+}
+
+inline void atomic_words_memcpy_store(const void* from,
+                            void* to,
+                            size_t size) {
+  atomic_words_memcpy(from, to, size, /*store_order=*/std::memory_order_release, /*load_order=*/std::memory_order_relaxed);
+}
+
+inline void atomic_words_memcpy_load(const void* from,
+                              void* to,
+                              size_t size) {
+  atomic_words_memcpy(from, to, size, /*store_order=*/std::memory_order_relaxed, /*load_order=*/std::memory_order_acquire);
 }
 
 inline void get_shm_path(int32_t id, char path[108]) {

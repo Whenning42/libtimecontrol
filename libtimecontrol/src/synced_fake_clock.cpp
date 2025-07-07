@@ -53,14 +53,22 @@ void SyncedFakeClock::set_speedup(float speedup) {
 }
 
 timespec SyncedFakeClock::clock_gettime(clockid_t clock_id) const{
-  const ClockState state = clock_state_.read();
-
   clock_id = base_clock(clock_id);
+
   timespec real_time;
   real_clock_gettime.load()(clock_id, &real_time);
 
-  auto [real_base, fake_base] = state.clock_baselines[clock_id];
-  return fake_base + (double)state.speedup * (real_time - real_base);
+  float speedup;
+  timespec real_base;
+  timespec fake_base;
+  do {
+    clock_state_.read_scope_start();
+    atomic_words_memcpy_load(&clock_state_.raw_val().speedup, &speedup, sizeof(speedup));
+    atomic_words_memcpy_load(&clock_state_.raw_val().clock_baselines[clock_id].first, &real_base, sizeof(real_base));
+    atomic_words_memcpy_load(&clock_state_.raw_val().clock_baselines[clock_id].second, &fake_base, sizeof(fake_base));
+  } while (!clock_state_.read_scope_end());
+
+  return fake_base + (double)speedup * (real_time - real_base);
 }
 
 std::array<std::pair<timespec, timespec>, 4> SyncedFakeClock::get_new_baselines(bool init_clocks) {

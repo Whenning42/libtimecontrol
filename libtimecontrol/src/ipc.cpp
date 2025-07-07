@@ -105,7 +105,7 @@ IpcWriter::~IpcWriter() { /* TODO: Cleanup? */ }
 bool IpcWriter::write(const void* data, std::size_t size) {
   log("Writing to write channel: %d with %d connections.", channel_, reader_connections_.size());
   size = std::min(size, mmap_size_);
-  atomic_words_memcpy(data, mmap_, size);
+  atomic_words_memcpy_store(data, mmap_, size);
   msync(mmap_, size, MS_SYNC);
 
   // Signal all of the listeners.
@@ -174,6 +174,6 @@ bool IpcReader::read(void* out_data, std::size_t max_size) {
 
 bool IpcReader::read_non_blocking(void* out_data, std::size_t max_size) {
   max_size = std::min(max_size, mmap_size_);
-  atomic_words_memcpy(mmap_, out_data, max_size);
+  atomic_words_memcpy_load(mmap_, out_data, max_size);
   return true;
 }

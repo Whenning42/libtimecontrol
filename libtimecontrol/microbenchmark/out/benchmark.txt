@@ -3,65 +3,64 @@ glibc ubenchmark:
   num_of_writes: 0
   average_write_time: 0.000 usec
   max_write_time: 0.000 usec
-  num_of_reads: 29758065
+  num_of_reads: 29879336
   average_read_time: 0.083 usec
-  max_read_time: 99.796 usec
+  max_read_time: 91.626 usec
 
 libtimecontrol ubenchmark:
-  num_of_writes: 96
-  average_write_time: 13.906 usec
-  max_write_time: 41.891 usec
-  num_of_reads: 9559770
-  average_read_time: 0.203 usec
-  max_read_time: 65.162 usec
+  num_of_writes: 93
+  average_write_time: 12.327 usec
+  max_write_time: 50.607 usec
+  num_of_reads: 8984971
+  average_read_time: 0.215 usec
+  max_read_time: 45.560 usec
 
 libtimecontrol cffi ext ubenchmark:
-  num_of_writes: 96
-  average_write_time: 13.076 usec
-  max_write_time: 34.979 usec
-  num_of_reads: 9518068
-  average_read_time: 0.204 usec
-  max_read_time: 76.444 usec
+  num_of_writes: 93
+  average_write_time: 11.069 usec
+  max_write_time: 32.550 usec
+  num_of_reads: 8966853
+  average_read_time: 0.216 usec
+  max_read_time: 119.015 usec
 
 libfaketime ubenchmark:
-  num_of_writes: 76
-  average_write_time: 91.518 usec
-  max_write_time: 290.432 usec
-  num_of_reads: 227978
-  average_read_time: 10.964 usec
-  max_read_time: 77.193 usec
+  num_of_writes: 77
+  average_write_time: 91.057 usec
+  max_write_time: 335.746 usec
+  num_of_reads: 219528
+  average_read_time: 11.389 usec
+  max_read_time: 184.507 usec
 
 ======== Benchmarks With Busy Write Loop: False ========
 glibc ubenchmark:
   num_of_writes: 0
   average_write_time: 0.000 usec
   max_write_time: 0.000 usec
-  num_of_reads: 29837191
+  num_of_reads: 29852621
   average_read_time: 0.083 usec
-  max_read_time: 73.471 usec
+  max_read_time: 148.085 usec
 
 libtimecontrol ubenchmark:
   num_of_writes: 132
-  average_write_time: 23.164 usec
-  max_write_time: 289.831 usec
-  num_of_reads: 10370663
-  average_read_time: 0.184 usec
-  max_read_time: 74.146 usec
+  average_write_time: 17.262 usec
+  max_write_time: 53.670 usec
+  num_of_reads: 10495310
+  average_read_time: 0.185 usec
+  max_read_time: 152.293 usec
 
 libtimecontrol cffi ext ubenchmark:
   num_of_writes: 132
-  average_write_time: 23.008 usec
-  max_write_time: 264.653 usec
-  num_of_reads: 10426192
-  average_read_time: 0.184 usec
-  max_read_time: 104.915 usec
+  average_write_time: 14.596 usec
+  max_write_time: 54.200 usec
+  num_of_reads: 10517739
+  average_read_time: 0.185 usec
+  max_read_time: 124.631 usec
 
 libfaketime ubenchmark:
   num_of_writes: 132
-  average_write_time: 107.724 usec
-  max_write_time: 299.636 usec
-  num_of_reads: 316278
-  average_read_time: 7.903 usec
-  max_read_time: 88.799 usec
+  average_write_time: 101.069 usec
+  max_write_time: 198.469 usec
+  num_of_reads: 319642
+  average_read_time: 7.826 usec
+  max_read_time: 175.025 usec
 
-Running benchmark harness.
