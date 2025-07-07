@@ -30,6 +30,9 @@ void copy_t(const void*& from_p,
   }
 }
 
+// This is basically an implementation of C++'s byte-wise atomic memcpy proposal.
+// That proposal does a better job explaining why we need this and how it works.
+// Proposal: https://www.open-std.org/jtc1/sc22/wg21/docs/papers/2020/p1478r5.html
 inline void atomic_words_memcpy(
     const void* from, 
     void* to, 
