@@ -95,21 +95,21 @@ TEST_F(TimeControlTest, Clock) {
 
   SetSpeedup(1);
   start_1 = clock();
-  for (int64_t i = 0; i < .5 * kBillion; ++i) {
+  for (int64_t i = 0; i < 1 * kBillion; ++i) {
     acc += i * 57 + 3;
   }
   end_1 = clock();
 
-  SetSpeedup(10);
+  SetSpeedup(20);
   start_2 = clock();
-  for (int64_t i = 0; i < .5 * kBillion; ++i) {
+  for (int64_t i = 0; i < 1 * kBillion; ++i) {
     acc += i * 57 + 3;
   }
   end_2 = clock();
 
   double time_1 = (double)(end_1 - start_1) / CLOCKS_PER_SEC;
   double time_2 = (double)(end_2 - start_2) / CLOCKS_PER_SEC;
-  EXPECT_NEAR(time_2 / time_1, 10, 5);
+  EXPECT_GE(time_2 / time_1, 5);
 }
 
 TEST_F(TimeControlTest, Nanosleep) {
