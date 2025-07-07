@@ -47,13 +47,19 @@ def main() -> None:
     sudo(["tee", str(TURBO_FILE)], input="1\n", text=True, stdout=subprocess.DEVNULL)
 
     env = os.environ.copy()
-    harness_core = 0
+    benchmark_runner_core = 0
     env["CHILD_CORE"] = "1"
     env["PYTHONPATH"] = os.getcwd()
 
-    print("Running benchmark harness.")
+    print("Running benchmarks.", file=sys.stderr, flush=True)
     subprocess.run(
-        ["taskset", "-c", str(harness_core), "python", "microbenchmark/harness.py"],
+        [
+            "taskset",
+            "-c",
+            str(benchmark_runner_core),
+            "python",
+            "microbenchmark/benchmarks.py",
+        ],
         env=env,
         check=True,
     )
