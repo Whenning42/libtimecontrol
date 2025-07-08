@@ -1,6 +1,6 @@
 [project]
 name = "libtimecontrol"
-version = "0.1.0"
+version = "0.1.2"
 description = ""
 authors = [
     {name = "William Henning",email = "wchenningwchenning@gmail.com"}

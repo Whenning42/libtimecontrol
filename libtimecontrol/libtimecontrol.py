@@ -1,7 +1,8 @@
 from enum import Enum
 
 from cffi import FFI
-from path import PACKAGE_ROOT
+
+from libtimecontrol.path import PACKAGE_ROOT
 
 
 class PreloadMode(Enum):
