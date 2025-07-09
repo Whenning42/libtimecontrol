@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <cstdarg>
+#include <dirent.h>
 #include <map>
 #include <ostream>
 #include <poll.h>
@@ -33,21 +34,22 @@ std::map<int, IpcWriter*>& sockets_to_writers() {
 
 constexpr size_t kBufSize = 108;
 void make_socket_path(int32_t channel, char buf[kBufSize]) {
-  const char* runtime_dir = getenv("XDG_RUNTIME_DIR");
+  // const char* runtime_dir = getenv("XDG_RUNTIME_DIR");
+  const char* runtime_dir = "/tmp";
   runtime_dir = runtime_dir ? runtime_dir : "/tmp";
 
-  char fifo_dir[kBufSize];
-  snprintf(fifo_dir, kBufSize, "%s/time_control", runtime_dir);
+  char sock_dir[kBufSize];
+  snprintf(sock_dir, kBufSize, "%s/time_control", runtime_dir);
 
-  int r = mkdir(fifo_dir, 0700);
+  int r = mkdir(sock_dir, 0755);
   if (r == -1 && errno == EEXIST) errno = 0;
   if (errno) {
     perror("mkdir");
-    log(" for file: %s", fifo_dir);
+    log(" for file: %s", sock_dir);
   }
 
 
-  snprintf(buf, kBufSize, "%s/time_control/fifo_%d", runtime_dir, channel);
+  snprintf(buf, kBufSize, "%s/time_control/sock_%d", runtime_dir, channel);
 }
 } // namespace
 
@@ -117,6 +119,7 @@ bool IpcWriter::write(const void* data, std::size_t size) {
       std::lock_guard<std::mutex> l(connections_lock_);
       auto& v = reader_connections_;
       v.erase(std::remove(v.begin(), v.end(), socket), v.end());
+      log("Channel %d, socket: %d threw EPIPE. Closing the socket.", channel_, socket);
     } else if (r == -1) {
       perror("write send");
     }
@@ -128,7 +131,7 @@ bool IpcWriter::write(const void* data, std::size_t size) {
 // ============================ IpcReader ==============================
 IpcReader::IpcReader(int32_t channel, std::size_t mmap_size):
   channel_(channel), mmap_size_(mmap_size), mmap_(get_mmap(channel, mmap_size)) {
-  socket_ = socket(AF_UNIX, SOCK_STREAM, 0);
+  socket_ = socket(AF_UNIX, SOCK_STREAM | SOCK_CLOEXEC, 0);
   struct sockaddr_un addr;
   addr.sun_family = AF_UNIX;
   make_socket_path(channel, addr.sun_path);
@@ -139,15 +142,33 @@ IpcReader::IpcReader(int32_t channel, std::size_t mmap_size):
   while (true) {
     r = connect(socket_, (sockaddr*)&addr, sizeof(sockaddr_un));
     n_tries += 1;
-    if (r == 0 || n_tries == 4) {
+    if (r == 0 || n_tries == 3) {
       break;
     }
     LAZY_LOAD_REAL(sleep);
     real_sleep.load()(1);
   }
   if (r == -1) {
-    log("Failed to connect");
     perror("connect");
+    fprintf(stderr, "Failed to connect to ipc server: %s\n", addr.sun_path);
+    fprintf(stderr, "Uid: %d\n", getuid());
+
+    // Show files in run directory
+    DIR *dir;
+    struct dirent *entry;
+    const char *dirname = "/run/user/1000/time_control";
+
+    fprintf(stderr, "Showing files in directory: %s\n", dirname);
+    dir = opendir(dirname);
+    if (dir == NULL) {
+        perror("Error opening directory");
+    }
+
+    while ((entry = readdir(dir)) != NULL) {
+        printf("Found run file: %s\n", entry->d_name);
+    }
+    fprintf(stderr, "Finished showing files in directory: %s\n", dirname);
+
     exit(1);
   }
   
@@ -163,12 +184,17 @@ IpcReader::IpcReader(int32_t channel, std::size_t mmap_size):
   log("Created reader on channel: %d with socket: %d", channel_, socket_);
 }
 IpcReader::IpcReader(std::size_t mmap_size): IpcReader(get_channel(), mmap_size) {}
-IpcReader::~IpcReader() { /* TODO: Cleanup? */ }
 
 bool IpcReader::read(void* out_data, std::size_t max_size) {
   log("Reading on channel: %d, socket: %d", channel_, socket_);
   char val;
-  recv(socket_, &val, 1, 0);
+  int r = recv(socket_, &val, 1, 0);
+  if (r == 0) {
+    log("socket %d shutdown.", socket_);
+  } else if (r == -1) {
+    perror("recv");
+    log("socket %d failed recv.", socket_);
+  }
   return read_non_blocking(out_data, max_size);
 }
 

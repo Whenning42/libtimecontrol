@@ -72,6 +72,13 @@ void Server::serve() {
           {
             std::lock_guard<std::mutex> l(writer->connections_mu());
             writer->connections().push_back(connection);
+            struct ucred creds;
+            socklen_t len = sizeof(creds);
+            r = getsockopt(connection, SOL_SOCKET, SO_PEERCRED, &creds, &len);
+            if (r == -1) {
+              perror("Cred getsockopt");
+            }
+            fprintf(stderr, "Channel %d connected socket %d has pid %d", get_channel(), connection, creds.pid);
           }
           // Send handshake to client.
           uint8_t h = 0;

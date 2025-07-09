@@ -7,9 +7,11 @@
 #include <stdio.h>
 #include <fcntl.h>
 #include <map>
+#include <shared_mutex>
 #include <sys/mman.h>
 #include <unistd.h>
 
+#include "fork.h"
 
 template <typename T>
 void copy_t(const void*& from_p,
@@ -70,17 +72,21 @@ inline void* get_mmap(const int32_t id, size_t size) {
     return it->second;
   }
 
-  char path[108];
-  get_shm_path(id, path);
-  int fd = shm_open(path, O_RDWR | O_CREAT, 0600);
-  if (fd == -1) {
-    perror("shm_open failed");
+  {
+    // std::shared_lock<std::shared_mutex> l(forking::mutex);
+
+    char path[108];
+    get_shm_path(id, path);
+    int fd = shm_open(path, O_RDWR | O_CREAT, 0644);
+    if (fd == -1) {
+      perror("shm_open failed");
+    }
+    ftruncate(fd, size);
+    void* map = mmap(NULL, sizeof(float), PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
+    if (map == MAP_FAILED) {
+      perror("mmap failed.");
+    }
+    maps[id] = map;
+    return map;
   }
-  ftruncate(fd, size);
-  void* map = mmap(NULL, sizeof(float), PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
-  if (map == MAP_FAILED) {
-    perror("mmap failed.");
-  }
-  maps[id] = map;
-  return map;
 }

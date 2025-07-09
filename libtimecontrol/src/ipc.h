@@ -44,13 +44,16 @@ class IpcReader {
   // Infers the IpcReader's channel from the 'TIME_CONTROL_CHANNEL' environment
   // variable, with a fallback of -1 if the variable isn't set.
   IpcReader(std::size_t mmap_size);
-  ~IpcReader();
+  ~IpcReader() {
+    if (socket_ > 0) close(socket_);
+  }
 
   bool read(void* out_data, std::size_t max_size);
   bool read_non_blocking(void* out_data, std::size_t max_size);
 
   int32_t channel() const { return channel_; }
   std::size_t mmap_size() const { return mmap_size_; }
+  int get_socket() const { return socket_; }
 
  private:
   int32_t channel_ = -1;

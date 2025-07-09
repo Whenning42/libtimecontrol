@@ -6,6 +6,7 @@
 #include <stdio.h>
 #include <sstream>
 #include <thread>
+#include <unistd.h>
 
 inline void log(const char* fmt, ...) {
 #ifdef DEBUG
@@ -15,7 +16,9 @@ inline void log(const char* fmt, ...) {
   va_start(args, fmt);
   std::ostringstream oss;
   oss << std::this_thread::get_id();
-  fprintf(stderr, "%s: ", oss.str().c_str());
+  long pid = (long)getpid();
+  long tid = (long)gettid();
+  fprintf(stderr, "pid: %ld, tid: %ld: ", pid, tid);
   vfprintf(stderr, fmt, args);
   fprintf(stderr, "\n");
   va_end(args);

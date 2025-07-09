@@ -29,6 +29,14 @@ PFN_TYPEDEF(nanosleep);
 PFN_TYPEDEF(usleep);
 PFN_TYPEDEF(sleep);
 PFN_TYPEDEF(clock_nanosleep);
+PFN_TYPEDEF(fork);
+// Not tracking exec?
+typedef int (*PFN_execl)(const char *pathname, const char *arg, ...);
+typedef int (*PFN_execlp)(const char *file, const char *arg, ...);
+typedef int (*PFN_execle)(const char *pathname, const char *arg, ...);
+typedef int (*PFN_execv)(const char *pathname, char *const argv[]);
+typedef int (*PFN_execvp)(const char *file, char *const argv[]);
+typedef int (*PFN_execvpe)(const char *file, char *const argv[], char *const envp[]);
 
 inline std::atomic<PFN_time> real_time(nullptr);
 inline std::atomic<PFN_gettimeofday> real_gettimeofday(nullptr);
@@ -38,6 +46,16 @@ inline std::atomic<PFN_nanosleep> real_nanosleep(nullptr);
 inline std::atomic<PFN_usleep> real_usleep(nullptr);
 inline std::atomic<PFN_sleep> real_sleep(nullptr);
 inline std::atomic<PFN_clock_nanosleep> real_clock_nanosleep(nullptr);
+
+inline std::atomic<PFN_fork> real_fork(nullptr);
+
+inline std::atomic<PFN_execl> real_execl(nullptr);
+inline std::atomic<PFN_execlp> real_execlp(nullptr);
+inline std::atomic<PFN_execle> real_execle(nullptr);
+
+inline std::atomic<PFN_execv> real_execv(nullptr);
+inline std::atomic<PFN_execvp> real_execvp(nullptr);
+inline std::atomic<PFN_execvpe> real_execvpe(nullptr);
 
 // Declare a local static instance of InitPFNs to initialize all of the function
 // pointers in this file.

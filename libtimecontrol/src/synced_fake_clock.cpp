@@ -43,6 +43,16 @@ SyncedFakeClock::SyncedFakeClock(): sync_reader_(sizeof(float)) {
   clock_state_.write(state);
 }
 
+float SyncedFakeClock::get_speedup() const {
+  float speedup;
+  do {
+    clock_state_.read_scope_start();
+    atomic_words_memcpy_load(&clock_state_.raw_val().speedup, &speedup, sizeof(speedup));
+  } while (!clock_state_.read_scope_end());
+  log("Got speedup: %f\n", speedup);
+  return speedup;
+}
+
 void SyncedFakeClock::set_speedup(float speedup) {
   log("Set speedup: %f", speedup);
   ClockState state;
@@ -68,6 +78,7 @@ timespec SyncedFakeClock::clock_gettime(clockid_t clock_id) const{
     atomic_words_memcpy_load(&clock_state_.raw_val().clock_baselines[clock_id].second, &fake_base, sizeof(fake_base));
   } while (!clock_state_.read_scope_end());
 
+  log("clock_gettime w/ speedup: %f on read socket: %d", speedup, sync_reader_.get_socket());
   return fake_base + (double)speedup * (real_time - real_base);
 }
 
@@ -102,13 +113,25 @@ void SyncedFakeClock::watch_speedup() {
   }
 }
 
+
+std::unique_ptr<SyncedFakeClock> c(nullptr);
 SyncedFakeClock& fake_clock() {
-  static SyncedFakeClock c;
-  return c;
+  return *c;
 }
 
-void start_fake_clock() {
-  SyncedFakeClock& c = fake_clock();
-  std::thread t = std::thread([&c](){ c.watch_speedup(); });
+// Run at process start and in forked children.
+void restart_fake_clock() {
+  fprintf(stderr, "============= RESTARTING FAKE CLOCK =============");
+  SyncedFakeClock* old_c = c.get();
+  std::unique_ptr<SyncedFakeClock> new_c = std::make_unique<SyncedFakeClock>();
+
+  // Note: old_c's watch thread isn't running anymore since only the forked thread
+  // carries over to the forked process.
+  if (old_c) {
+    // Copy over the old clock state to the new clock.
+    new_c->clock_state().write(old_c->clock_state().read());
+  }
+  c = std::move(new_c);
+  std::thread t = std::thread([](){ c->watch_speedup(); });
   t.detach();
 }

@@ -25,6 +25,10 @@ InitPFNs::InitPFNs() {
   LAZY_LOAD_REAL(usleep);
   LAZY_LOAD_REAL(sleep);
   LAZY_LOAD_REAL(clock_nanosleep);
+  LAZY_LOAD_REAL(fork);
+  LAZY_LOAD_REAL(execv);
+  LAZY_LOAD_REAL(execvp);
+  LAZY_LOAD_REAL(execvpe);
 }
 
 
@@ -190,3 +194,65 @@ namespace testing {
     return (::real_clock_gettime.load())(clkid, t);
   }
 }  // namespace testing
+
+pid_t fork(void) {
+  LAZY_LOAD_REAL(fork);
+  log("Forking pid: %ld", getpid());
+  pid_t p = real_fork.load()();
+  log("Returning from fork in pid: %ld", p);
+  return p;
+}
+
+int execl(const char *pathname, const char *arg, ...) {
+  (void)pathname;
+  (void)arg;
+  fprintf(stderr, "============ execl unimplemented ==============\n");
+  fprintf(stderr, "============ execl unimplemented ==============\n");
+  fprintf(stderr, "============ execl unimplemented ==============\n");
+  fprintf(stderr, "============ execl unimplemented ==============\n");
+  exit(1);
+}
+
+int execlp(const char *file, const char *arg, ...) {
+  (void)file;
+  (void)arg;
+  fprintf(stderr, "============ execlp unimplemented ==============\n");
+  fprintf(stderr, "============ execlp unimplemented ==============\n");
+  fprintf(stderr, "============ execlp unimplemented ==============\n");
+  fprintf(stderr, "============ execlp unimplemented ==============\n");
+  exit(1);
+}
+
+int execle(const char *pathname, const char *arg, ...) {
+  (void)pathname;
+  (void)arg;
+  fprintf(stderr, "============ execle unimplemented ==============\n");
+  fprintf(stderr, "============ execle unimplemented ==============\n");
+  fprintf(stderr, "============ execle unimplemented ==============\n");
+  fprintf(stderr, "============ execle unimplemented ==============\n");
+  exit(1);
+}
+
+int execv(const char *pathname, char *const argv[]) {
+  LAZY_LOAD_REAL(execv);
+  log("Execv in pid: %d, pathname: %s", getpid());
+  log("Execed pathname: %s", pathname);
+  int i = 0;
+  while (argv[i] != nullptr) {
+    log("W/ arg: %s", argv[i]);
+    i++;
+  }
+  return real_execv.load()(pathname, argv);
+}
+
+int execvp(const char *file, char *const argv[]) {
+  LAZY_LOAD_REAL(execvp);
+  log("Execvp in pid: %d", getpid());
+  return real_execvp.load()(file, argv);
+}
+
+int execvpe(const char *file, char *const argv[], char *const envp[]) {
+  LAZY_LOAD_REAL(execvpe);
+  log("Execvpe in pid: %d", getpid());
+  return real_execvpe.load()(file, argv, envp);
+}
