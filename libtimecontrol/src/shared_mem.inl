@@ -72,7 +72,7 @@ inline void* get_mmap(const int32_t id, size_t size) {
 
   char path[108];
   get_shm_path(id, path);
-  int fd = shm_open(path, O_RDWR | O_CREAT, 0600);
+  int fd = shm_open(path, O_RDWR | O_CREAT, 0644);
   if (fd == -1) {
     perror("shm_open failed");
   }

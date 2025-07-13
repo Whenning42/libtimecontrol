@@ -6,11 +6,11 @@ project('libtimecontrol', ['c', 'cpp'],
                 'warning_level=3',
                 'werror=true',
                 'cpp_std=c++17',
-                'b_lto=true',
                 'b_ndebug=if-release'])
 
 if get_option('buildtype') == 'release'
     add_project_arguments('-DNDEBUG', language : ['cpp'])
+    add_project_arguments('-flto', language: ['cpp'])
 else
     add_project_arguments('-DDEBUG', language : ['cpp'])
 endif

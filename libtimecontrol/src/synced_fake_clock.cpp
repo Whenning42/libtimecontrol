@@ -1,7 +1,13 @@
 #include "src/synced_fake_clock.h"
 
+#include <cassert>
+
 #include "src/libc_overrides.h"
+#include "src/real_time_fns.h"
 #include "src/time_operators.h"
+#ifdef INIT_WRITER
+#include "src/time_writer.h"
+#endif
 
 namespace {
 // To reduce to number of clocks we have to fetch each time we change our speedup,
@@ -31,84 +37,89 @@ int base_clock(int clkid) {
     case CLOCK_BOOTTIME_ALARM:
       return CLOCK_MONOTONIC;
     default:
-      return -1;
+      return clkid;
   }
 }
 } // namespace
 
-SyncedFakeClock::SyncedFakeClock(): sync_reader_(sizeof(float)) {
-  ClockState state;
-  state.speedup = 1;
-  state.clock_baselines = get_new_baselines(/*init_clocks=*/true);
-  clock_state_.write(state);
+
+float SyncedFakeClock::get_speedup() {
+  TimeSocket* c = get_time_connection(CLOCK_REALTIME);
+  if (c) return c->get_speedup();
+  else return 1;
 }
 
-void SyncedFakeClock::set_speedup(float speedup) {
-  log("Set speedup: %f", speedup);
-  ClockState state;
-  state.speedup = speedup;
-  state.clock_baselines = get_new_baselines(/*init_clocks=*/false);
-  clock_state_.write(state);
-  log("Speedup is now: %f", clock_state_.read().speedup);
-}
-
-timespec SyncedFakeClock::clock_gettime(clockid_t clock_id) const{
+timespec SyncedFakeClock::clock_gettime(clockid_t clock_id) {
   clock_id = base_clock(clock_id);
 
+  TimeSocket* c = get_time_connection(clock_id);
+  if (!c) {
+    log("Calling real time fn for clock: %d", clock_id);
+    timespec r;
+    real_fns().clock_gettime(clock_id, &r);
+    return r;
+  }
+  c->update();
+
   timespec real_time;
-  real_clock_gettime.load()(clock_id, &real_time);
+  real_fns().clock_gettime(clock_id, &real_time);
 
-  float speedup;
-  timespec real_base;
-  timespec fake_base;
-  do {
-    clock_state_.read_scope_start();
-    atomic_words_memcpy_load(&clock_state_.raw_val().speedup, &speedup, sizeof(speedup));
-    atomic_words_memcpy_load(&clock_state_.raw_val().clock_baselines[clock_id].first, &real_base, sizeof(real_base));
-    atomic_words_memcpy_load(&clock_state_.raw_val().clock_baselines[clock_id].second, &fake_base, sizeof(fake_base));
-  } while (!clock_state_.read_scope_end());
+  float speedup = c->get_speedup();
+  auto [real_base, fake_base] = c->get_baselines();
 
-  return fake_base + (double)speedup * (real_time - real_base);
+  timespec fake = (double)speedup * (real_time - real_base) + fake_base;
+  log("R Calling fake clock_gettime");
+  log("R Clock id: %d", clock_id);
+  log("R Real baseline: %lf", timespec_to_sec(real_base));
+  log("R Fake baseline: %lf", timespec_to_sec(fake_base));
+  log("R Real Now: %lf", timespec_to_sec(real_time));
+  log("R Fake Now Time: %lf", timespec_to_sec(fake));
+  log("R Speedup: %f", speedup);
+
+  return fake;
 }
 
-std::array<std::pair<timespec, timespec>, 4> SyncedFakeClock::get_new_baselines(bool init_clocks) {
-  static InitPFNs init_pfns;
-  std::array<std::pair<timespec, timespec>, 4> new_baselines;
-  for (clockid_t c = 0; c < kNumClocks; ++c) {
-    timespec& real_base = new_baselines[c].first;
-    timespec& fake_base = new_baselines[c].second;
-
-    real_clock_gettime.load()(c, &real_base);
-    if (init_clocks) {
-      real_clock_gettime.load()(c, &fake_base);
-    } else {
-      fake_base = clock_gettime(c);
-    }
+TimeSocket* SyncedFakeClock::get_time_connection(clockid_t clock_id) {
+  switch (clock_id) {
+    case CLOCK_REALTIME:
+      if (realtime_) return realtime_.get();
+      break;
+    case CLOCK_MONOTONIC:
+      if (monotonic_) return monotonic_.get();
+      break;
+    case CLOCK_PROCESS_CPUTIME_ID:
+      if (process_cpu_) return process_cpu_.get();
+      break;
+    case CLOCK_THREAD_CPUTIME_ID:
+      if (thread_cpu_) return thread_cpu_.get();
+      init_thread_clock();
+      return thread_cpu_.get();
+    default:
+      log("Warning: clock id: %d isn't overriden by libtimecontrol", clock_id);
   }
-  return new_baselines;
+  return nullptr;
 }
 
-void SyncedFakeClock::watch_speedup() {
-  log("Running a watch speedup loop");
-  float read_speedup;
-  sync_reader_.read_non_blocking(&read_speedup, sizeof(read_speedup));
-  log("Read initial speedup: %f", read_speedup);
-  set_speedup(read_speedup);
+// Note: This function is run in a single-threaded context.
+__attribute__((constructor))
+void reinit_process_clocks() {
+  #ifdef INIT_WRITER
+  log("Initializing Writer.");
+  set_speedup(1, get_channel());
+  #endif
 
-  while (true) {
-    sync_reader_.read(&read_speedup, sizeof(read_speedup));
-    log("Read speedup: %f", read_speedup);
-    set_speedup(read_speedup);
-  }
+  log("Initializing Reader.");
+  realtime_ = std::make_unique<TimeSocket>(CLOCK_REALTIME);
+  monotonic_ = std::make_unique<TimeSocket>(CLOCK_MONOTONIC);
+
+  clockid_t clock_id;
+  // Not guaranteed to be async-signal safe, but likely is.
+  clock_getcpuclockid(getpid(), &clock_id);
+  process_cpu_ = std::make_unique<TimeSocket>(clock_id);
 }
 
-SyncedFakeClock& fake_clock() {
-  static SyncedFakeClock c;
-  return c;
-}
-
-void start_fake_clock() {
-  SyncedFakeClock& c = fake_clock();
-  std::thread t = std::thread([&c](){ c.watch_speedup(); });
-  t.detach();
+// Note: This function is run in a multi-threaded context.
+void init_thread_clock() {
+  if (!mu_thread.try_lock()) return;
+  thread_cpu_ = std::make_unique<TimeSocket>(CLOCK_THREAD_CPUTIME_ID);
 }

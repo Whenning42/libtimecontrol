@@ -1,37 +1,41 @@
 #pragma once
 
-#include <array>
-#include <cstdint>
-#include <utility>
-#include <time.h>
+#include <memory>
+#include <vector>
 
-#include "src/seq_lock.h"
-#include "src/ipc.h"
-#include "src/log.h"
+#include "src/time_reader.h"
+
+
+static std::unique_ptr<TimeSocket> realtime_ = nullptr;
+static std::unique_ptr<TimeSocket> monotonic_ = nullptr;
+static std::unique_ptr<TimeSocket> process_cpu_ = nullptr;
+
+static thread_local std::mutex mu_thread;
+static thread_local std::unique_ptr<TimeSocket> thread_cpu_ = nullptr;
 
 class SyncedFakeClock {
  public:
-  SyncedFakeClock();
+  SyncedFakeClock() = default;
 
-  float get_speedup() const { return clock_state_.read().speedup; }
-  void set_speedup(float speedup);
-  timespec clock_gettime(clockid_t clock_id) const;
+  float get_speedup();
+  timespec clock_gettime(clockid_t clock_id);
 
-  // Watch the sync_reader for change to speedup and apply them to this fake clock.
-  void watch_speedup();
- 
  private:
-  const int kNumClocks = 4;
-  std::array<std::pair<timespec, timespec>, 4> get_new_baselines(bool init_clocks);
-
-  IpcReader sync_reader_;
-  struct ClockState {
-    // real and fake baselines.
-    std::array<std::pair<timespec, timespec>, 4> clock_baselines;
-    float speedup;
-  };
-  SeqLock<ClockState> clock_state_;
+  // Returns nullptr if clock_id either isn't a clock faked by timecontrol, or
+  // if clock_id is uninitialized.
+  TimeSocket* get_time_connection(clockid_t clock_id);
 };
 
-SyncedFakeClock& fake_clock();
-void start_fake_clock();
+inline SyncedFakeClock& fake_clock() { 
+  static std::unique_ptr<SyncedFakeClock> _fake_clock = std::make_unique<SyncedFakeClock>();
+  return *_fake_clock;
+}
+
+// Runs whenever a process starts directly or via a fork.
+__attribute__((constructor))
+void reinit_process_clocks();
+
+// Run in get_time_connection if the CLOCK_THREAD_CPUTIME clock is requested
+// and thread_cpu_ hasn't been initialized yet.
+void init_thread_clock();
+

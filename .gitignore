@@ -7,3 +7,4 @@ dist/*
 todo.txt
 libtimecontrol/microbenchmark/out/*
 libtimecontrol/microbenchmark/bench
+settings.json

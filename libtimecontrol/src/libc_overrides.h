@@ -1,47 +1,8 @@
 #pragma once
 
-#include <atomic>
-#include <dlfcn.h>
 #include <time.h>
-#include <unistd.h>
+#include <stdint.h>
 
-typedef void* (*dlsym_type)(void*, const char*);
-void load_dlsyms();
-
-#ifdef DLSYM_OVERRIDE
-inline dlsym_type libc_dlsym = nullptr;
-#else
-inline dlsym_type libc_dlsym = dlsym;
-#endif
-
-#define PFN_TYPEDEF(func) typedef decltype(&func) PFN_##func
-#define LAZY_LOAD_REAL(func) if(!::real_##func) { \
-    ::real_##func = (PFN_##func)libc_dlsym(RTLD_NEXT, #func); \
+namespace testing {
+int sleep_for_nanos(uint64_t nanos);
 }
-
-PFN_TYPEDEF(time);
-// gettimeofday and clock_gettime decltypes have no_excepts that throw
-// warnings when we use PFN_TYPEDEF.
-typedef int (*PFN_gettimeofday)(timeval*, void*);
-typedef int (*PFN_clock_gettime)(clockid_t, timespec*);
-PFN_TYPEDEF(clock);
-PFN_TYPEDEF(nanosleep);
-PFN_TYPEDEF(usleep);
-PFN_TYPEDEF(sleep);
-PFN_TYPEDEF(clock_nanosleep);
-
-inline std::atomic<PFN_time> real_time(nullptr);
-inline std::atomic<PFN_gettimeofday> real_gettimeofday(nullptr);
-inline std::atomic<PFN_clock_gettime> real_clock_gettime(nullptr);
-inline std::atomic<PFN_clock> real_clock(nullptr);
-inline std::atomic<PFN_nanosleep> real_nanosleep(nullptr);
-inline std::atomic<PFN_usleep> real_usleep(nullptr);
-inline std::atomic<PFN_sleep> real_sleep(nullptr);
-inline std::atomic<PFN_clock_nanosleep> real_clock_nanosleep(nullptr);
-
-// Declare a local static instance of InitPFNs to initialize all of the function
-// pointers in this file.
-class InitPFNs {
- public:
-  InitPFNs();
-};

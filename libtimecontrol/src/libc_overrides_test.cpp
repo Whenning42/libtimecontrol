@@ -1,8 +1,14 @@
+#include "src/libc_overrides.h"
+
 #include <gtest/gtest.h>
 
-#include "time_reader.inl"
+#include "src/constants.h"
+#include "src/real_time_fns.h"
+#include "src/time_operators.h"
+#include "src/time_writer.h"
 
 int32_t kTestChannel = -1;
+
 
 class NanosleepTest : public testing::Test {
  protected:
@@ -12,7 +18,7 @@ class NanosleepTest : public testing::Test {
 
   void SetSpeedup(float speedup) {
     set_speedup(speedup, kTestChannel);
-    testing::real_nanosleep(.01 * kBillion);
+    testing::sleep_for_nanos(.01 * kBillion);
   }
 };
 
@@ -20,7 +26,7 @@ void catch_signal(int) {}
 
 void* raise_after_one_real_second(void* data) {
   pthread_t signal_thread = *((pthread_t*)data);
-  testing::real_nanosleep(kBillion);
+  testing::sleep_for_nanos(kBillion);
   struct sigaction action;
   action.sa_handler = catch_signal;
   sigaction(SIGUSR1, &action, nullptr);
@@ -55,10 +61,10 @@ TEST_F(NanosleepTest, CorrectlyHandlesAbsTime) {
 
   timespec real_before;
   timespec real_after;
-  testing::real_clock_gettime(CLOCK_REALTIME, &real_before);
+  real_fns().clock_gettime(CLOCK_REALTIME, &real_before);
   SetSpeedup(3.0);
   clock_nanosleep(CLOCK_REALTIME, TIMER_ABSTIME, &one_second_from_now, /*rem=*/nullptr);
-  testing::real_clock_gettime(CLOCK_REALTIME, &real_after);
+  real_fns().clock_gettime(CLOCK_REALTIME, &real_after);
 
   EXPECT_NEAR(timespec_to_sec(real_after - real_before), .333, .05);
 }

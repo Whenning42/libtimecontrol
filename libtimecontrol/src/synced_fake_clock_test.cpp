@@ -4,20 +4,17 @@
 #include <iostream>
 
 #include "src/ipc.h"
-#include "src/test_environment.h"
 #include "src/time_writer.h"
 #include "src/constants.h"
 
 
-const int32_t kChannel = -1;
 
 TEST(SyncedFakeClockTest, UpdatesHappen) {
-  IpcWriter& writer = get_writer(kChannel);
+  set_speedup(1, get_channel());
   SyncedFakeClock& c = fake_clock();
 
-  float val = 5;
   log("Writing speedup=5 to writer");
-  writer.write(&val, sizeof(val));
+  set_speedup(5, get_channel());
   usleep(.1 * kMillion);
 
   EXPECT_EQ(c.get_speedup(), 5);

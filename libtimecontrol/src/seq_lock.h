@@ -53,13 +53,17 @@ class SeqLock {
     return vals_[read_from_];
   }
 
+  T& raw_val() {
+    return vals_[read_from_];
+  }
+
  private:
   std::mutex write_lock_;
   T vals_[2];
-  std::atomic<uint32_t> id_;
+  std::atomic<uint32_t> id_ = 0;
 
   // Read scope vars
-  mutable int n_1_;
-  mutable int n_2_;
-  mutable int read_from_;
+  mutable int n_1_ = 0;
+  mutable int n_2_ = 0;
+  mutable int read_from_ = 0;
 };

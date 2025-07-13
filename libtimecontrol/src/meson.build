@@ -13,36 +13,74 @@ common_cpp = []
 inc = include_directories('../')
 
 # Static libraries
+libc_overrides = static_library(
+    'libc_overrides',
+    ['libc_overrides.cpp'],
+    include_directories: inc
+)
 log = static_library(
     'log',
     ['log.cpp'],
     include_directories: inc
 )
+real_time_fns = static_library(
+    'real_time_fns',
+    ['real_time_fns.cpp'],
     include_directories: inc
 )
-time_control32 = static_library(
-    'time_control32',
-    ['time_reader.cpp', 'time_writer.cpp', 'ipc.cpp', 'ipc_server.cpp',
-     'time_operators.cpp', 'synced_fake_clock.cpp'],
+time_operators = static_library(
+    'time_operators',
+    ['time_operators.cpp'],
+    include_directories: inc
+)
+time_reader = static_library(
+    'time_reader',
+    ['time_reader.cpp'],
+    include_directories: inc
+)
+time_writer = static_library(
+    'time_writer',
+    ['time_writer.cpp'],
+    include_directories: inc
+)
+synced_fake_clock = static_library(
+    'synced_fake_clock',
+    ['synced_fake_clock.cpp'],
+    include_directories: inc
+)
+synced_fake_clock_for_test = static_library(
+    'synced_fake_clock_for_test',
+    ['synced_fake_clock.cpp'],
     include_directories: inc,
-    cpp_args: common_cpp + ['-m32']
+    cpp_args: ['-DINIT_WRITER']
 )
 
-# Shared libraries
+
+
+shared_library(
+  'time_controller', ['time_writer.cpp'], link_with: [
+    time_operators, time_writer, real_time_fns, log
+  ], install: true, include_directories: inc
+)
+
+# Shared libraries. We build these from source instead of linking the pre-built
+# libraries since we need to build under several different configurations.
+time_control_srcs = [
+  # All of the targets except for time_writer and synced_fake_clock_for_test.
+  'libc_overrides.cpp', 'log.cpp', 'real_time_fns.cpp', 'time_operators.cpp', 'time_reader.cpp', 'synced_fake_clock.cpp'
+]
 variants = [
-  {'name':'time_controller', 'source': ['time_writer_entry.cpp'], 'cpp': common_cpp},
-  {'name':'time_control', 'source': ['time_reader_entry.cpp', 'libc_overrides.cpp'], 'cpp': common_cpp},
-  {'name':'time_control32', 'source': ['time_reader_entry.cpp', 'libc_overrides.cpp'], 'cpp': common_cpp + ['-m32'], 'link': ['-m32'], 'link_with': [time_control32]},
-  {'name':'time_control_dlsym', 'source': ['time_reader_entry.cpp', 'libc_overrides.cpp'], 'cpp': common_cpp + ['-DDLSYM_OVERRIDE']},
-  {'name':'time_control_dlsym32', 'source': ['time_reader_entry.cpp', 'libc_overrides.cpp'], 'cpp': common_cpp + ['-m32', '-DDLSYM_OVERRIDE'], 'link': ['-m32'], 'link_with': [time_control32]},
+  {'name':'time_control', 'cpp': []},
+  {'name':'time_control32', 'cpp': ['-m32'], 'link': ['-m32']},
+  {'name':'time_control_dlsym', 'cpp': ['-DDLSYM_OVERRIDE']},
+  {'name':'time_control_dlsym32', 'cpp': ['-m32', '-DDLSYM_OVERRIDE'], 'link': ['-m32']},
 ]
 foreach v : variants
   shared_library(
-    v['name'], v['source'],
+    v['name'], time_control_srcs,
     dependencies: lib_deps,
     cpp_args: v.get('cpp', []),
     link_args: v.get('link', []),
-    link_with: v.get('link_with', [time_control]),
     install: true,
     include_directories: inc
   )
@@ -50,13 +88,29 @@ endforeach
 
 # Tests
 test_deps = lib_deps + [lgtest_dep, lgtest_main_dep]
-ipc_test = executable('ipc_test', ['ipc_test.cpp'], dependencies: test_deps, include_directories: inc, link_with: [ipc, ipc_server])
-synced_fake_clock_test = executable('synced_fake_clock_test', ['synced_fake_clock_test.cpp'], dependencies: test_deps, include_directories: inc, 
-                                    link_with: [time_control, synced_fake_clock, time_operators, ipc, ipc_server, libc_overrides])
-time_control_test = executable('time_control_test', ['time_control_test.cpp'], dependencies: test_deps, include_directories: inc, 
-                               link_with: [time_control, synced_fake_clock, time_operators, ipc, ipc_server, libc_overrides])
+test_targets = [
+  libc_overrides, log, real_time_fns, time_operators, time_reader, time_writer, synced_fake_clock_for_test
+]
 
+libc_overrides_test = executable(
+  'libc_overrides_test',
+  ['libc_overrides_test.cpp'],
+  dependencies: test_deps,
+  include_directories: inc, 
+  link_with: test_targets)
+synced_fake_clock_test = executable(
+  'synced_fake_clock_test',
+  ['synced_fake_clock_test.cpp'],
+  dependencies: test_deps,
+  include_directories: inc, 
+  link_with: test_targets)
+time_control_test = executable(
+  'time_control_test',
+  ['time_control_test.cpp'],
+  dependencies: test_deps,
+  include_directories: inc, 
+  link_with: test_targets)
 
-test('ipc_test', ipc_test, is_parallel: false)
+test('libc_overrides', libc_overrides_test, is_parallel: false)
 test('synced_fake_clock', synced_fake_clock_test, is_parallel: false)
 test('time_control_test', time_control_test, is_parallel: false)
