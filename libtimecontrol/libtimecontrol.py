@@ -29,6 +29,6 @@ class TimeController:
             mode_str = "_dlsym"
         preload = (
             f"{PACKAGE_ROOT}/lib/libtime_control{mode_str}.so:"
-            f"{PACKAGE_ROOT}/lib/libtime_control32{mode_str}.so"
+            f"{PACKAGE_ROOT}/lib/libtime_control{mode_str}32.so"
         )
         return {"TIME_CONTROL_CHANNEL": str(self.channel), "LD_PRELOAD": preload}
