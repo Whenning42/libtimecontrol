@@ -14,6 +14,10 @@ test_prog_dlsym = executable('test_prog_dlsym', ['test_prog_dlsym.cpp'],
                              dependencies: deps,
                              cpp_args: ['-pthread'],
                              install: true)
+test_prog_dlsym32 = executable('test_prog_dlsym32', ['test_prog_dlsym.cpp'],
+                             dependencies: deps,
+                             cpp_args: ['-m32', '-pthread'], link_args: ['-m32'],
+                             install: true)
 
 python = find_program('python3')
 test('integration test',
