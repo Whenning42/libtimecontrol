@@ -13,17 +13,11 @@ common_cpp = []
 inc = include_directories('../')
 
 # Static libraries
-ipc = static_library('ipc', ['ipc.cpp'], include_directories: inc)
-ipc_server = static_library('ipc_server', ['ipc_server.cpp'], include_directories: inc)
-time_operators = static_library('time_operators', ['time_operators.cpp'], include_directories: inc)
-synced_fake_clock = static_library('synced_fake_clock', ['synced_fake_clock.cpp'], include_directories: inc)
-libc_overrides = static_library('libc_overrides', ['libc_overrides.cpp'], include_directories: inc)
-time_writer = static_library('time_writer', ['time_writer.cpp'], include_directories: inc)
-time_reader = static_library('time_reader', ['time_reader.cpp'], include_directories: inc)
-time_control = static_library(
-    'time_control',
-    ['time_reader.cpp', 'time_writer.cpp', 'ipc.cpp', 'ipc_server.cpp',
-     'time_operators.cpp', 'synced_fake_clock.cpp'],
+log = static_library(
+    'log',
+    ['log.cpp'],
+    include_directories: inc
+)
     include_directories: inc
 )
 time_control32 = static_library(
