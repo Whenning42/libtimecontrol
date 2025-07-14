@@ -28,18 +28,14 @@ TimeSocket::TimeSocket(clockid_t clock_id) {
   // Receive the signal and speedup pointers.
   int32_t signal_offset;
   int32_t speedup_offset;
-  log("Handshake 0");
   EXIT_IF_ERROR("reader handshake recv signal", recv(sock, &signal_offset, sizeof(signal_offset), 0));
-  log("Handshake 1");
   EXIT_IF_ERROR("reader handshake recv speedup", recv(sock, &speedup_offset, sizeof(speedup_offset), 0));
-  log("Handshake 2");
   log("Reader signal offset: %d", signal_offset);
   auto* signal = reinterpret_cast<std::atomic<signal_type>*>(buf + signal_offset);
   auto* speedup = reinterpret_cast<std::atomic<float>*>(buf + speedup_offset);
 
   // Send the clock_id we want monitored
   EXIT_IF_ERROR("reader handshake send", send(sock, &clock_id, sizeof(clock_id), 0));
-  log("Handshake 3");
 
   // Switch the socket to non-blocking mode for receiving on.
   int flags = fcntl(sock, F_GETFL, 0);

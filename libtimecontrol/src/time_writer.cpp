@@ -117,17 +117,12 @@ void TimeWriter::setup_connection(int accepted_socket) {
   // Send the signal and speedup pointers.
   int32_t signal_offset = (uint8_t*)signal - (uint8_t*)buf_;
   int32_t speedup_offset = (uint8_t*)speedup_ - (uint8_t*)buf_;
-  log("Writer signal offset: %d", signal_offset);
-  log("W Handshake 0");
   LOG_IF_ERROR("writer signal send", send(accepted_socket, &signal_offset, sizeof(signal_offset), 0));
-  log("W Handshake 1");
   LOG_IF_ERROR("writer speedup send", send(accepted_socket, &speedup_offset, sizeof(speedup_offset), 0));
-  log("W Handshake 2");
 
   // Receive the clock_id the client wants monitored.
   clockid_t clock_id;
   LOG_IF_ERROR("writer clock_id recv", recv(accepted_socket, &clock_id, sizeof(clock_id), 0));
-  log("W Handshake 3");
 
   {
     log("Acquire connections lock: setup");
