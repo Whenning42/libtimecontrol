@@ -1,6 +1,6 @@
 [project]
 name = "libtimecontrol"
-version = "0.1.2"
+version = "0.1.3"
 description = ""
 authors = [
     {name = "William Henning",email = "wchenningwchenning@gmail.com"}
@@ -35,3 +35,8 @@ patchelf = "^0.17.2.2"
 meson = "^1.8.2"
 ninja = "^1.11.1.4"
 twine = "^6.1.0"
+
+# The cffi micro-benchmark build uses setuptools and requires the module to be
+# specified.
+[tool.setuptools]
+py-modules = ["libtimecontrol"]
