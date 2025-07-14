@@ -27,8 +27,8 @@ class SyncedFakeClock {
 };
 
 inline SyncedFakeClock& fake_clock() { 
-  static std::unique_ptr<SyncedFakeClock> _fake_clock = std::make_unique<SyncedFakeClock>();
-  return *_fake_clock;
+  static SyncedFakeClock _fake_clock;
+  return _fake_clock;
 }
 
 // Runs whenever a process starts directly or via a fork.
