@@ -70,10 +70,10 @@ timespec SyncedFakeClock::clock_gettime(clockid_t clock_id) {
   timespec fake = (double)speedup * (real_time - real_base) + fake_base;
   log("R Calling fake clock_gettime");
   log("R Clock id: %d", clock_id);
-  log("R Real baseline: %lf", timespec_to_sec(real_base));
-  log("R Fake baseline: %lf", timespec_to_sec(fake_base));
-  log("R Real Now: %lf", timespec_to_sec(real_time));
-  log("R Fake Now Time: %lf", timespec_to_sec(fake));
+  log("R Real baseline: %f", timespec_to_sec(real_base));
+  log("R Fake baseline: %f", timespec_to_sec(fake_base));
+  log("R Real Now: %f", timespec_to_sec(real_time));
+  log("R Fake Now Time: %f", timespec_to_sec(fake));
   log("R Speedup: %f", speedup);
 
   return fake;
@@ -107,6 +107,8 @@ void reinit_process_clocks() {
   log("Initializing Writer.");
   set_speedup(1, get_channel());
   #endif
+
+  info("Preloaded time control library in %s", program_invocation_name);
 
   log("Initializing Reader.");
   realtime_ = std::make_unique<TimeSocket>(CLOCK_REALTIME);

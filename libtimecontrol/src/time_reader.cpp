@@ -1,5 +1,6 @@
 #include "src/time_reader.h"
 
+#include <inttypes.h>
 #include <stdio.h>
 #include <sys/socket.h>
 #include <sys/un.h>
@@ -16,8 +17,8 @@ TimeSocket::TimeSocket(clockid_t clock_id) {
   int sock = make_socket();
 
   log("Connecting to: %s", addr.sun_path);
-  log("Monitoring clock: %ld", clock_id);
-  log("User is: %d", getuid);
+  log("Monitoring clock: %" PRIu64, (uint64_t)clock_id);
+  log("User is: %d", getuid());
   EXIT_IF_ERROR("Time socket connect", connect(sock, (sockaddr*)&addr, sizeof(addr)));
   log("Connected to: %s", addr.sun_path);
 

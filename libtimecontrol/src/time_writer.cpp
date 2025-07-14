@@ -70,12 +70,12 @@ void TimeWriter::set_speedup(float speedup) {
 
       log("W Calculating new baselines.");
       log("W Clock id: %d", con.clock_id);
-      log("W Real baseline: %lf", timespec_to_sec(con.real_baseline));
-      log("W Fake baseline: %lf", timespec_to_sec(con.fake_baseline));
-      log("W Now: %lf", timespec_to_sec(real));
-      log("W New fake: %lf", timespec_to_sec(new_fake));
+      log("W Real baseline: %f", timespec_to_sec(con.real_baseline));
+      log("W Fake baseline: %f", timespec_to_sec(con.fake_baseline));
+      log("W Now: %f", timespec_to_sec(real));
+      log("W New fake: %f", timespec_to_sec(new_fake));
       log("W Old speedup: %f", old_speedup);
-      log("W New speedup: %f", speedup);
+      log("W New speedup: %f\n", speedup);
 
       con.real_baseline = real;
       con.fake_baseline = new_fake;
@@ -168,6 +168,6 @@ extern "C" void set_speedup(float speedup, int32_t channel) {
     std::tie(it, added) = time_writers_.emplace(channel, std::make_unique<TimeWriter>(channel));
   }
 
-  log("Using existing writer: %p", it->second.get());
+  log("Using existing writer: %p", (void*)it->second.get());
   it->second->set_speedup(speedup);
 }

@@ -51,11 +51,7 @@ struct RealFns {
 };
 
 inline RealFns& real_fns() {
+  // Make these thread_local so that pointer access can be non-atomic.
   static thread_local RealFns real_fns;
-  static bool init = false;
-  if (!init) {
-    log("Initializing Pointers");
-    init = true;
-  }
   return real_fns;
 }

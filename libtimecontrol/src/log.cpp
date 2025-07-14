@@ -52,3 +52,24 @@ void log(const char* fmt, ...) {
   return;
 #endif
 }
+
+void info(const char* fmt, ...) {
+  static std::mutex log_mu;
+  std::lock_guard<std::mutex> l(log_mu);
+  va_list args;
+  va_start(args, fmt);
+
+  char out[512];
+  int pid = getpid();
+  int tid = gettid();
+  npf_snprintf(out, 256, "%s: p: %d, t: %d: ", program_invocation_name, pid, tid);
+
+  char body[256];
+  npf_vsnprintf(body, 254, fmt, args);
+  strncat(body, "\n", 2);
+  strncat(out, body, 256);
+
+  write(STDERR_FILENO, out, strnlen(out, 512));
+
+  va_end(args);
+}
