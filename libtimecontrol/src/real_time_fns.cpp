@@ -5,6 +5,10 @@
 #include <cstring>
 #include <sys/time.h>
 
+// TODO: Assert the loaded functions are not loaded from time control. This would be
+// helpful, since by linking this project wrong, you can end up with two sets of
+// time control functions in a process and so when you go to get the RTLD_NEXT "real"
+// functions, you instead just get the fake functions again.
 #define LAZY_LOAD_REAL(func) func = (PFN_##func)libc_dlsym(RTLD_NEXT, #func); \
 
 RealFns::RealFns() {
