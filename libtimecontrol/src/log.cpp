@@ -24,6 +24,12 @@
 #include <thread>
 #include <unistd.h>
 
+// The manylinux container uses an old glibc that doesn't implement gettid().
+// We handle that by defining our own gettid() here if isn't not already defined.
+#ifndef gettid
+#include <sys/syscall.h>
+#define gettid() syscall(SYS_gettid)
+#endif // gettid
 
 extern char *program_invocation__name;
 

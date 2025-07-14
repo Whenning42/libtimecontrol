@@ -58,9 +58,13 @@ synced_fake_clock_for_test = static_library(
 
 
 shared_library(
-  'time_controller', ['time_writer.cpp'], link_with: [
+  'time_controller', ['time_writer.cpp'],
+  link_with: [
     time_operators, time_writer, real_time_fns, log
-  ], install: true, include_directories: inc
+  ],
+  install: true,
+  include_directories: inc,
+  dependencies: lib_deps
 )
 
 # Shared libraries. We build these from source instead of linking the pre-built
