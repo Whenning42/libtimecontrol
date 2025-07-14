@@ -8,8 +8,7 @@ import sys
 import time
 from pathlib import Path
 
-BENCH_BIN = "./microbenchmark/out/bench"
-BENCH_SRC = "microbenchmark/bench.c"
+BENCH_BIN = "./libtimecontrol/microbenchmark/out/bench"
 WRITE_PERIOD_SEC = 0.03
 BENCHMARK_LENGTH = 4
 
@@ -59,16 +58,15 @@ def run_libtimecontrol(sleep_writer: bool):
 
 
 def run_libtimecontrol_cffi_ext(sleep_writer: bool):
-    from _time_control.lib import set_speedup
-
     from libtimecontrol import TimeController
+    from libtimecontrol._time_control import lib
 
     tc = TimeController(0)
     env = os.environ.copy() | tc.child_flags()
 
     def writer(rec):
         start = time.perf_counter_ns()
-        set_speedup(1, 0)
+        lib.set_speedup(1, 0)
         end = time.perf_counter_ns()
         rec.append((end - start) / 1000.0)  # to µs
 
