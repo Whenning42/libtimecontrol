@@ -18,9 +18,6 @@ void run() {
     exit(1);
   }
 
-  Dl_info dl_info;
-  dladdr((void*)real_fns().clock_gettime, &dl_info);
-
   timespec start;
   real_fns().clock_gettime(CLOCK_MONOTONIC, &start);
   while (true) {
