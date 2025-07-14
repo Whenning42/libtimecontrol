@@ -8,6 +8,7 @@
 #include "src/error.h"
 #include "src/ipc.h"
 #include "src/libc_overrides.h"
+#include "src/time_wire.h"
 #include "src/time_operators.h"
 
 
@@ -81,7 +82,8 @@ void TimeWriter::set_speedup(float speedup) {
 
       // Send the new baselines through the socket.
       std::pair<timespec, timespec> new_real_and_fake = {real, new_fake};
-      int r = send(con.socket, &new_real_and_fake, sizeof(new_real_and_fake), 0);
+      TimeWire send_base = TimeWire(new_real_and_fake);
+      int r = send(con.socket, &send_base, sizeof(send_base), 0);
 
       // Signal the baseline has been sent.
       if (r != -1) {
@@ -94,7 +96,6 @@ void TimeWriter::set_speedup(float speedup) {
       log("Release connections lock: update");
     }
     if (was_closed) {
-        // TODO: Don't free inside of connection lock
         free_connection(i);
         // Update the index to account for element i having been removed.
         i--;

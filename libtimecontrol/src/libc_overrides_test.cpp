@@ -53,7 +53,7 @@ TEST_F(NanosleepTest, RemHandling) {
 
 TEST_F(NanosleepTest, CorrectlyHandlesAbsTime) {
   timespec now;
-  clock_gettime(CLOCK_REALTIME, &now);
+  clock_gettime(CLOCK_MONOTONIC, &now);
   timespec one_second;
   one_second.tv_sec = 1;
   one_second.tv_nsec = 0;
@@ -61,10 +61,10 @@ TEST_F(NanosleepTest, CorrectlyHandlesAbsTime) {
 
   timespec real_before;
   timespec real_after;
-  real_fns().clock_gettime(CLOCK_REALTIME, &real_before);
+  real_fns().clock_gettime(CLOCK_MONOTONIC, &real_before);
   SetSpeedup(3.0);
-  clock_nanosleep(CLOCK_REALTIME, TIMER_ABSTIME, &one_second_from_now, /*rem=*/nullptr);
-  real_fns().clock_gettime(CLOCK_REALTIME, &real_after);
+  clock_nanosleep(CLOCK_MONOTONIC, TIMER_ABSTIME, &one_second_from_now, /*rem=*/nullptr);
+  real_fns().clock_gettime(CLOCK_MONOTONIC, &real_after);
 
   EXPECT_NEAR(timespec_to_sec(real_after - real_before), .333, .05);
 }

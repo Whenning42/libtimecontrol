@@ -7,6 +7,7 @@
 #include "src/error.h"
 #include "src/ipc.h"
 #include "src/shared_mem.inl"
+#include "src/time_wire.h"
 #include "src/time_operators.h"
 
 
@@ -50,6 +51,7 @@ TimeSocket::TimeSocket(clockid_t clock_id) {
   }
 
   socket_ = sock;
+  baseline_reader_ = SockReadStruct<TimeWire>(socket_);
   clock_id_ = clock_id;
   speedup_ = speedup;
   signal_ = signal;
@@ -68,25 +70,19 @@ void TimeSocket::update() {
 
   if (cur_signal != last_signal) {
     log("Trying to grab reader update mutex");
-    if (!mu_update_.try_lock()) return;
+    std::unique_lock<std::mutex> l(mu_update_, std::try_to_lock);
+    if (!l.owns_lock()) return;
+
     log("Got mutex. Updating speedup in reader to: %f", speedup_->load());
 
-    std::pair<timespec, timespec> new_baselines;
-    errno = 0;
-    int r = 0;
-    while (true) {
-      r = recv(socket_, &new_baselines, sizeof(new_baselines), 0);
-      if (r == -1 && (errno == EAGAIN || errno == EWOULDBLOCK)) break;
-      if (r == -1) {
-        perror("Update recv.");
-      }
-    }
+    baseline_reader_.read();
+    if (!baseline_reader_.has_new_val()) return;
 
-    log("Received baselines: %lf, %lf", timespec_to_sec(new_baselines.first), timespec_to_sec(new_baselines.second));
+    std::pair<timespec, timespec> new_baselines = baseline_reader_.val().to_timespecs();
+    log("Clock: %d received baselines: %f, %f", clock_id_, timespec_to_sec(new_baselines.first), timespec_to_sec(new_baselines.second));
+
     baselines_.write(new_baselines);
     last_signal_.store(cur_signal, std::memory_order_release);
-
-    mu_update_.unlock();
   }
 }
 

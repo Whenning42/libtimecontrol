@@ -75,8 +75,9 @@ variants = [
   {'name':'time_control_dlsym', 'cpp': ['-DDLSYM_OVERRIDE']},
   {'name':'time_control_dlsym32', 'cpp': ['-m32', '-DDLSYM_OVERRIDE'], 'link': ['-m32']},
 ]
+time_controls = []
 foreach v : variants
-  shared_library(
+  time_controls += shared_library(
     v['name'], time_control_srcs,
     dependencies: lib_deps,
     cpp_args: v.get('cpp', []),
@@ -98,6 +99,12 @@ libc_overrides_test = executable(
   dependencies: test_deps,
   include_directories: inc, 
   link_with: test_targets)
+sock_read_struct_test = executable(
+  'sock_read_struct_test',
+  ['sock_read_struct_test.cpp'],
+  dependencies: test_deps,
+  include_directories: inc, 
+  link_with: test_targets)
 synced_fake_clock_test = executable(
   'synced_fake_clock_test',
   ['synced_fake_clock_test.cpp'],
@@ -112,5 +119,8 @@ time_control_test = executable(
   link_with: test_targets)
 
 test('libc_overrides', libc_overrides_test, is_parallel: false)
+test('sock_read_struct_test', sock_read_struct_test, is_parallel: false)
 test('synced_fake_clock', synced_fake_clock_test, is_parallel: false)
 test('time_control_test', time_control_test, is_parallel: false)
+
+subdir('async_test')

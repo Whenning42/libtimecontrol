@@ -7,6 +7,8 @@
 #include <memory>
 
 #include "src/seq_lock.h"
+#include "src/sock_read_struct.h"
+#include "src/time_wire.h"
 
 
 class TimeSocket {
@@ -28,6 +30,7 @@ class TimeSocket {
 
  private:
   int socket_;
+  SockReadStruct<TimeWire> baseline_reader_;
   clockid_t clock_id_;
   std::atomic<float>* speedup_;
 
