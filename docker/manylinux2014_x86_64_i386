@@ -1,9 +1,41 @@
 # A manylinux container with x86_64 and i386 repos.
+# Published as: whenning42/manylinux2014_x86_64_i386
+#
+# Build with this command (substitute your own dockerhub username):
+#   $ docker build --tag whenning42/manylinux2014_x86_64_i386:latest -f \
+#       docker/manylinux2014_x86_64_i386 docker/
+#
+# Push with this command (substitute your own dockerhub username):
+#   $ docker push whenning42/manylinux2014_x86_64_i386:latest
 
 FROM quay.io/pypa/manylinux2014_x86_64
 
-# We get the 32-bit repo from mayeut's fedora COPR linked here. I'm not sure what,
-# if any, guarantees there are that this COPR stays at this url.
+# We get the 32-bit devtoolset from from mayeut's fedora COPR, which is used
+# in the official manylinux implementation. Ref:
+#   https://github.com/pypa/manylinux/blob/0807daf4e5b141de39061e87c4a4edb81f7ab33e/docker/build_scripts/install-runtime-packages.sh#L116
+#
+# Note: We don't have any guarantees that this repo will stay up indefinitely,
+# since it's sort of an implementation detail of the official manylinux
+# container.
 RUN curl -fsSLo /etc/yum.repos.d/mayeut-devtoolset-10.repo \
             https://copr.fedorainfracloud.org/coprs/mayeut/devtoolset-10/repo/custom-1/mayeut-devtoolset-10-custom-1.repo
+
+# Replace the $basearch variable in the repo's baseurl with i386, so that the
+# repo uses the 32-bit, not the 64-bit devtoolset.
 RUN sed -i 's/\$basearch/i386/g' /etc/yum.repos.d/mayeut-devtoolset-10.repo 
+
+# Install the most important looking devtoolset packges into our published
+# base image, so that even if we lose access to the upstream devtoolset repo,
+# our published images will remain useful.
+#
+# Note: The x86_64 devtoolset already ships the 32-bit compiler.
+# so we don't install the devtoolset-10-gcc.i686 package.
+RUN yum install -y \
+  devtoolset-10-libstdc++-devel.i686 \
+  devtoolset-10-libatomic-devel.i686 \
+  devtoolset-10-make-devel.i686 \
+  devtoolset-10-libasan-devel.i686 \
+  devtoolset-10-libubsan-devel.i686 \
+  devtoolset-10-libquadmath-devel.i686 \
+  devtoolset-10-valgrind-devel
+
