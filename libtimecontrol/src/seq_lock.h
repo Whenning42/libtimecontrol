@@ -18,7 +18,7 @@ class SeqLock {
       atomic_words_memcpy_load(&vals_[read_from], &v, sizeof(T));
       atomic_thread_fence(std::memory_order_acquire);
       n2 = id_.load(std::memory_order_relaxed);
-    } while (n % 1 or n2 != n);
+    } while ((n % 2 == 1) or (n2 != n));
     return v;
   }
 
