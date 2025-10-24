@@ -35,7 +35,7 @@ controller.set_speedup(25)
 # right corner of its output, is moving.
 env = os.environ
 subprocess.run(
-    ["watch", "-n1", "date"]
+    ["watch", "-n1", "date"],
     env=env | controller.child_flags(),
 )
 ```

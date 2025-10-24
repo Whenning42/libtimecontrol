@@ -1,3 +1,7 @@
+0.1.5 - 2025-10-23
+
+Add a pyproject description.
+
 0.1.4 - 2025-10-23
 
 FIXED:
