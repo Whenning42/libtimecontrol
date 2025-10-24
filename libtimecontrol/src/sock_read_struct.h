@@ -12,7 +12,7 @@ class SockReadStruct {
  public:
   SockReadStruct() {
     socket_ = 0;
-    buf_ = std::vector<char>();
+    buf_ = std::vector<char>(sizeof(T));
     has_new_val_ = false;
     cur_offset_ = 0;
   }
@@ -34,7 +34,12 @@ class SockReadStruct {
       if (r == -1) {
         perror("SockReadStruct recv.");
       }
-      if (r != -1) {
+      if (r == 0) {
+        // EOF: connection closed. Discard partial data.
+        cur_offset_ = 0;
+        break;
+      }
+      if (r > 0) {
         cur_offset_ += r;
         if (cur_offset_ == buf_.size()) {
           memcpy(&val_, buf_.data(), sizeof(T));

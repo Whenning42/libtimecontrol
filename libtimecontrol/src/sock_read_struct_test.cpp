@@ -51,3 +51,36 @@ TEST(SockReadStructTest, ReadsUint32ByteByByte) {
   close(read_fd);
   close(write_fd);
 }
+
+TEST(SockReadStructTest, HandlesEOFWithPartialData) {
+  int sv[2];
+  ASSERT_EQ(socketpair(AF_UNIX, SOCK_STREAM, 0, sv), 0) << "socketpair failed";
+
+  int read_fd  = sv[0];
+  int write_fd = sv[1];
+
+  // Make the reader side non-blocking, as required by SockReadStruct.
+  int flags = fcntl(read_fd, F_GETFL, 0);
+  ASSERT_NE(flags, -1);
+  ASSERT_EQ(fcntl(read_fd, F_SETFL, flags | O_NONBLOCK), 0);
+
+  SockReadStruct<uint32_t> reader(read_fd);
+
+  const uint8_t bytes[4] = {0x01, 0x02, 0x03, 0x04};
+
+  // Send only 2 bytes of a 4-byte value
+  ASSERT_EQ(send(write_fd, &bytes[0], 2, 0), 2);
+  reader.read();
+  EXPECT_FALSE(reader.has_new_val());
+
+  // Close the write end to trigger EOF
+  close(write_fd);
+
+  // Reading should handle EOF gracefully and not hang
+  reader.read();
+
+  // Partial data should be discarded, so no new value
+  EXPECT_FALSE(reader.has_new_val());
+
+  close(read_fd);
+}
