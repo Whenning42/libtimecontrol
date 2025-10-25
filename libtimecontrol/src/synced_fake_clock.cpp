@@ -54,7 +54,6 @@ timespec SyncedFakeClock::clock_gettime(clockid_t clock_id) {
 
   TimeReader* c = get_time_connection(clock_id);
   if (!c) {
-    log("Calling real time fn for clock: %d", clock_id);
     timespec r;
     real_fns().clock_gettime(clock_id, &r);
     return r;
@@ -68,13 +67,6 @@ timespec SyncedFakeClock::clock_gettime(clockid_t clock_id) {
   auto [real_base, fake_base] = c->get_baselines();
 
   timespec fake = (double)speedup * (real_time - real_base) + fake_base;
-  log("R Calling fake clock_gettime");
-  log("R Clock id: %d", clock_id);
-  log("R Real baseline: %f", timespec_to_sec(real_base));
-  log("R Fake baseline: %f", timespec_to_sec(fake_base));
-  log("R Real Now: %f", timespec_to_sec(real_time));
-  log("R Fake Now Time: %f", timespec_to_sec(fake));
-  log("R Speedup: %f", speedup);
 
   return fake;
 }
@@ -104,13 +96,11 @@ TimeReader* SyncedFakeClock::get_time_connection(clockid_t clock_id) {
 __attribute__((constructor))
 void reinit_process_clocks() {
   #ifdef INIT_WRITER
-  log("Initializing Writer.");
   set_speedup(1, get_channel());
   #endif
 
   info("Preloaded time control library in %s", program_invocation_name);
 
-  log("Initializing Reader.");
   realtime_ = std::make_unique<TimeReader>(CLOCK_REALTIME);
   monotonic_ = std::make_unique<TimeReader>(CLOCK_MONOTONIC);
 
