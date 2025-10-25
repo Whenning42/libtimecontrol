@@ -44,7 +44,7 @@ int base_clock(int clkid) {
 
 
 float SyncedFakeClock::get_speedup() {
-  TimeSocket* c = get_time_connection(CLOCK_REALTIME);
+  TimeReader* c = get_time_connection(CLOCK_REALTIME);
   if (c) return c->get_speedup();
   else return 1;
 }
@@ -52,7 +52,7 @@ float SyncedFakeClock::get_speedup() {
 timespec SyncedFakeClock::clock_gettime(clockid_t clock_id) {
   clock_id = base_clock(clock_id);
 
-  TimeSocket* c = get_time_connection(clock_id);
+  TimeReader* c = get_time_connection(clock_id);
   if (!c) {
     log("Calling real time fn for clock: %d", clock_id);
     timespec r;
@@ -79,7 +79,7 @@ timespec SyncedFakeClock::clock_gettime(clockid_t clock_id) {
   return fake;
 }
 
-TimeSocket* SyncedFakeClock::get_time_connection(clockid_t clock_id) {
+TimeReader* SyncedFakeClock::get_time_connection(clockid_t clock_id) {
   switch (clock_id) {
     case CLOCK_REALTIME:
       if (realtime_) return realtime_.get();
@@ -111,17 +111,17 @@ void reinit_process_clocks() {
   info("Preloaded time control library in %s", program_invocation_name);
 
   log("Initializing Reader.");
-  realtime_ = std::make_unique<TimeSocket>(CLOCK_REALTIME);
-  monotonic_ = std::make_unique<TimeSocket>(CLOCK_MONOTONIC);
+  realtime_ = std::make_unique<TimeReader>(CLOCK_REALTIME);
+  monotonic_ = std::make_unique<TimeReader>(CLOCK_MONOTONIC);
 
   clockid_t clock_id;
   // Not guaranteed to be async-signal safe, but likely is.
   clock_getcpuclockid(getpid(), &clock_id);
-  process_cpu_ = std::make_unique<TimeSocket>(clock_id);
+  process_cpu_ = std::make_unique<TimeReader>(clock_id);
 }
 
 // Note: This function is run in a multi-threaded context.
 void init_thread_clock() {
   if (!mu_thread.try_lock()) return;
-  thread_cpu_ = std::make_unique<TimeSocket>(CLOCK_THREAD_CPUTIME_ID);
+  thread_cpu_ = std::make_unique<TimeReader>(CLOCK_THREAD_CPUTIME_ID);
 }

@@ -12,7 +12,7 @@
 #include "src/time_operators.h"
 
 
-TimeSocket::TimeSocket(clockid_t clock_id) {
+TimeReader::TimeReader(clockid_t clock_id) {
   sockaddr_un addr = get_socket_addr(get_channel());
   int sock = make_socket();
 
@@ -60,7 +60,7 @@ TimeSocket::TimeSocket(clockid_t clock_id) {
   log("Constructed time socket for clock: %d, on addr: %s", clock_id, addr.sun_path);
 }
 
-void TimeSocket::update() {
+void TimeReader::update() {
   uint32_t cur_signal = signal_->load(std::memory_order_acquire);
   uint32_t last_signal = last_signal_.load(std::memory_order_acquire);
   // log("Clock signals: last: %d, cur: %d", last_signal, cur_signal);

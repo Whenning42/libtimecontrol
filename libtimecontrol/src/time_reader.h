@@ -11,13 +11,13 @@
 #include "src/time_wire.h"
 
 
-class TimeSocket {
+class TimeReader {
  public:
   // Connect to the server and handshake to give it the clockid_t we're watching
   // and to get the shared memory pointer that we'll use to watch the written_id
   // from.
-  TimeSocket(clockid_t clock_id);
-  ~TimeSocket() { close(socket_); }
+  TimeReader(clockid_t clock_id);
+  ~TimeReader() { close(socket_); }
 
   // Check if written_id != read_id. If so, read new real and fake baselines
   // from the socket.

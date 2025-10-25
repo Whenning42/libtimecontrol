@@ -6,12 +6,12 @@
 #include "src/time_reader.h"
 
 
-static std::unique_ptr<TimeSocket> realtime_ = nullptr;
-static std::unique_ptr<TimeSocket> monotonic_ = nullptr;
-static std::unique_ptr<TimeSocket> process_cpu_ = nullptr;
+static std::unique_ptr<TimeReader> realtime_ = nullptr;
+static std::unique_ptr<TimeReader> monotonic_ = nullptr;
+static std::unique_ptr<TimeReader> process_cpu_ = nullptr;
 
 static thread_local std::mutex mu_thread;
-static thread_local std::unique_ptr<TimeSocket> thread_cpu_ = nullptr;
+static thread_local std::unique_ptr<TimeReader> thread_cpu_ = nullptr;
 
 class SyncedFakeClock {
  public:
@@ -23,7 +23,7 @@ class SyncedFakeClock {
  private:
   // Returns nullptr if clock_id either isn't a clock faked by timecontrol, or
   // if clock_id is uninitialized.
-  TimeSocket* get_time_connection(clockid_t clock_id);
+  TimeReader* get_time_connection(clockid_t clock_id);
 };
 
 inline SyncedFakeClock& fake_clock() { 
