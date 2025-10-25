@@ -22,17 +22,8 @@ TimeReader::TimeReader(clockid_t clock_id) {
   EXIT_IF_ERROR("Time socket connect", connect(sock, (sockaddr*)&addr, sizeof(addr)));
   log("Connected to: %s", addr.sun_path);
 
-  // Open the shared memory segment that we read the signals from
-  uint8_t* buf = (uint8_t*)get_channel_shm(get_channel(), kDefaultShmSize);
-
-  // Receive the signal and speedup pointers.
-  int32_t signal_offset;
-  int32_t speedup_offset;
-  EXIT_IF_ERROR("reader handshake recv signal", recv(sock, &signal_offset, sizeof(signal_offset), 0));
-  EXIT_IF_ERROR("reader handshake recv speedup", recv(sock, &speedup_offset, sizeof(speedup_offset), 0));
-  log("Reader signal offset: %d", signal_offset);
-  auto* signal = reinterpret_cast<std::atomic<signal_type>*>(buf + signal_offset);
-  auto* speedup = reinterpret_cast<std::atomic<float>*>(buf + speedup_offset);
+  // Open the shared memory segment
+  ShmLayout* shm = reinterpret_cast<ShmLayout*>(get_channel_shm(get_channel(), sizeof(ShmLayout)));
 
   // Send the clock_id we want monitored
   EXIT_IF_ERROR("reader handshake send", send(sock, &clock_id, sizeof(clock_id), 0));
@@ -50,9 +41,8 @@ TimeReader::TimeReader(clockid_t clock_id) {
   socket_ = sock;
   baseline_reader_ = SockReadStruct<TimeWire>(socket_);
   clock_id_ = clock_id;
-  speedup_ = speedup;
-  signal_ = signal;
-  last_signal_.store(0);
+  shm_ = shm;
+  last_clock_gen_.store(0);
   timespec now;
   clock_gettime(clock_id, &now);
   baselines_.raw_val().first = now;
@@ -61,16 +51,16 @@ TimeReader::TimeReader(clockid_t clock_id) {
 }
 
 void TimeReader::update() {
-  uint32_t cur_signal = signal_->load(std::memory_order_acquire);
-  uint32_t last_signal = last_signal_.load(std::memory_order_acquire);
-  // log("Clock signals: last: %d, cur: %d", last_signal, cur_signal);
+  uint32_t cur_clock_gen = shm_->clock_generation.load(std::memory_order_acquire);
+  uint32_t last_clock_gen = last_clock_gen_.load(std::memory_order_acquire);
+  // log("Clock generation: last: %d, cur: %d", last_clock_gen, cur_clock_gen);
 
-  if (cur_signal != last_signal) {
+  if (cur_clock_gen != last_clock_gen) {
     log("Trying to grab reader update mutex");
     std::unique_lock<std::mutex> l(mu_update_, std::try_to_lock);
     if (!l.owns_lock()) return;
 
-    log("Got mutex. Updating speedup in reader to: %f", speedup_->load());
+    log("Got mutex. Updating speedup in reader to: %f", shm_->speedup.load());
 
     baseline_reader_.read();
     if (!baseline_reader_.has_new_val()) return;
@@ -79,7 +69,7 @@ void TimeReader::update() {
     log("Clock: %d received baselines: %f, %f", clock_id_, timespec_to_sec(new_baselines.first), timespec_to_sec(new_baselines.second));
 
     baselines_.write(new_baselines);
-    last_signal_.store(cur_signal, std::memory_order_release);
+    last_clock_gen_.store(cur_clock_gen, std::memory_order_release);
   }
 }
 

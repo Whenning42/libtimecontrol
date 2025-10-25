@@ -10,15 +10,14 @@
 struct Connection {
   int socket;
   clockid_t clock_id;
-  std::atomic<signal_type>* signal;
   timespec real_baseline;
   timespec fake_baseline;
 
   Connection() = default;
-  Connection(int socket, clockid_t clock_id, std::atomic<signal_type>* signal)
-    :socket(socket), clock_id(clock_id), signal(signal) {
-      real_fns().clock_gettime(clock_id, &real_baseline);
-      real_fns().clock_gettime(clock_id, &fake_baseline);
+  Connection(int socket, clockid_t clock_id)
+      : socket(socket), clock_id(clock_id) {
+    real_fns().clock_gettime(clock_id, &real_baseline);
+    real_fns().clock_gettime(clock_id, &fake_baseline);
   }
 };
 
@@ -41,15 +40,7 @@ class TimeWriter {
   void setup_connection(int accepted_socket);
   void free_connection(int connection_idx);
 
-  void* buf_;
-  size_t buf_size_;
-  int32_t num_slots_;
-
-  std::atomic<float>* speedup_;
-  std::atomic<signal_type>* signals_start_;
-
-  std::mutex mu_available_signals_;
-  std::vector<std::atomic<signal_type>*> available_signals_;
+  ShmLayout* shm_;
 
   std::mutex mu_connections_;
   std::vector<Connection> connections_;

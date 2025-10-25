@@ -2,22 +2,20 @@
 
 #include <fcntl.h>
 #include <stdlib.h>
-#include <string>
 #include <sys/mman.h>
 #include <sys/socket.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <sys/un.h>
 
+#include <string>
+
 #include "src/error.h"
 #include "src/log.h"
 #include "src/shared_mem.inl"
 
-
 using signal_type = uint32_t;
 
-// We support a little under 16,384 max threads.
-constexpr int32_t kDefaultShmSize = 4 * 16'384;
 constexpr int32_t kPathLen = 108;
 
 inline int32_t get_channel() {
@@ -69,6 +67,4 @@ inline sockaddr_un get_socket_addr(int32_t channel) {
   return addr;
 }
 
-inline int make_socket() {
-  return socket(AF_UNIX, SOCK_SEQPACKET, 0);
-}
+inline int make_socket() { return socket(AF_UNIX, SOCK_SEQPACKET, 0); }

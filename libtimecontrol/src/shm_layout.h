@@ -6,6 +6,6 @@
 using signal_type = uint32_t;
 
 struct ShmLayout {
-  float speedup;
-  signal_type signals;
+  std::atomic<float> speedup;
+  std::atomic<signal_type> clock_generation;
 };

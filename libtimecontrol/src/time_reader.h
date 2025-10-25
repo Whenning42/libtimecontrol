@@ -24,7 +24,7 @@ class TimeReader {
   // from the socket.
   void update();
 
-  float get_speedup() { return speedup_->load(std::memory_order_acquire); }
+  float get_speedup() { return shm_->speedup.load(std::memory_order_acquire); }
 
   // Seqlock reads the clock baselines.
   std::pair<timespec, timespec> get_baselines() { return baselines_.read(); }
@@ -33,12 +33,11 @@ class TimeReader {
   int socket_;
   SockReadStruct<TimeWire> baseline_reader_;
   clockid_t clock_id_;
-  std::atomic<float>* speedup_;
+  ShmLayout* shm_;
 
   // Protects the entire update() procedure.
   std::mutex mu_update_;
 
-  std::atomic<uint32_t>* signal_;
-  std::atomic<uint32_t> last_signal_;
+  std::atomic<uint32_t> last_clock_gen_;
   SeqLock<std::pair<timespec, timespec>> baselines_;
 };
