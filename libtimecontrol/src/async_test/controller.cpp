@@ -1,8 +1,9 @@
 #include <fcntl.h>
-#include <fstream>
 #include <stdio.h>
-#include <unistd.h>
 #include <time.h>
+#include <unistd.h>
+
+#include <fstream>
 #include <string>
 
 #include "src/async_test/common.h"
@@ -10,9 +11,9 @@
 #include "src/time_operators.h"
 #include "src/time_writer.h"
 
-
 FILE* run_subprocess(const char* command) {
-  setenv("LD_PRELOAD", "/home/william/Workspaces/libtimecontrol/libtimecontrol/lib/libtime_control_dlsym32.so", /*replace=*/1);
+  setenv("LD_PRELOAD", "./libtimecontrol/lib/libtime_control_dlsym32.so",
+         /*replace=*/1);
   setenv("TIME_CONTROL_CHANNEL", "0", /*replace=*/1);
 
   return popen(command, "r");
@@ -27,10 +28,10 @@ int main(int argc, char** argv) {
   set_speedup(1.0, 0);
   std::vector<FILE*> procs;
   for (int i = 0; i < kNumProcesses; ++i) {
-    procs.push_back(run_subprocess("./libtimecontrol/src/async_test/controllee"));
+    procs.push_back(
+        run_subprocess("./libtimecontrol/src/async_test/controllee"));
   }
   fprintf(stderr, "Running parent\n");
-
 
   // For 3 seconds, periodically set the time.
   timespec start;
@@ -55,13 +56,15 @@ int main(int argc, char** argv) {
   std::string line;
   int lines;
   file.open(kTestFile);
-  for(lines = 0; std::getline(file, line); lines++);
+  for (lines = 0; std::getline(file, line); lines++);
   const int expected_successes = kThreadsPerProcess * kNumProcesses;
   if (lines != expected_successes) {
-    fprintf(stderr, "Test failed. Passing processes: %d / %d.\n", lines, expected_successes);
+    fprintf(stderr, "Test failed. Passing processes: %d / %d.\n", lines,
+            expected_successes);
     exit(1);
   } else {
-    fprintf(stderr, "Test passed. Passing processes: %d / %d.\n", lines, expected_successes);
+    fprintf(stderr, "Test passed. Passing processes: %d / %d.\n", lines,
+            expected_successes);
     exit(0);
   }
 }
