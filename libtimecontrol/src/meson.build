@@ -128,3 +128,4 @@ test('synced_fake_clock', synced_fake_clock_test, is_parallel: false)
 test('time_control_test', time_control_test, is_parallel: false)
 
 subdir('async_test')
+subdir('util')
