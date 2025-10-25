@@ -5,9 +5,7 @@
 
 #include "src/ipc.h"
 #include "src/real_time_fns.h"
-
-
-using signal_type = uint32_t;
+#include "src/shm_layout.h"
 
 struct Connection {
   int socket;
@@ -42,11 +40,6 @@ class TimeWriter {
   // will be relatively slow which should be ok.
   void setup_connection(int accepted_socket);
   void free_connection(int connection_idx);
-
-  struct ShmLayout {
-    float speedup;
-    signal_type signals;
-  };
 
   void* buf_;
   size_t buf_size_;
