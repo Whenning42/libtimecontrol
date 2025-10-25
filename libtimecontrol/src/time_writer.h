@@ -26,6 +26,7 @@ class TimeWriter {
   // Uses default configured shared memory size and channel.
   TimeWriter();
   TimeWriter(int32_t channel);
+  ~TimeWriter();
 
   void listen_thread();
   void set_speedup(float speedup);
@@ -41,11 +42,10 @@ class TimeWriter {
   void free_connection(int connection_idx);
 
   ShmLayout* shm_;
+  int32_t channel_;
 
   std::mutex mu_connections_;
   std::vector<Connection> connections_;
 
   int listen_socket_;
 };
-
-extern "C" void set_speedup(float speedup, int32_t channel);

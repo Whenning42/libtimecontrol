@@ -3,19 +3,21 @@
 #include <gtest/gtest.h>
 #include <iostream>
 
-#include "src/ipc.h"
-#include "src/time_writer.h"
 #include "src/constants.h"
+#include "src/ipc.h"
+#include "src/time_control.h"
 
 
 
 TEST(SyncedFakeClockTest, UpdatesHappen) {
-  set_speedup(1, get_channel());
+  TimeControl* time_control = new_time_control(get_channel());
+  set_speedup(time_control, 1);
   SyncedFakeClock& c = fake_clock();
 
   log("Writing speedup=5 to writer");
-  set_speedup(5, get_channel());
+  set_speedup(time_control, 5);
   usleep(.1 * kMillion);
 
   EXPECT_EQ(c.get_speedup(), 5);
+  delete_time_control(time_control);
 }

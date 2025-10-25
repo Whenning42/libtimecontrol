@@ -4,20 +4,15 @@
 
 #include "src/constants.h"
 #include "src/real_time_fns.h"
+#include "src/time_control.h"
 #include "src/time_operators.h"
-#include "src/time_writer.h"
 
 int32_t kTestChannel = -1;
 
-
 class NanosleepTest : public testing::Test {
  protected:
-  void SetUp() {
-    SetSpeedup(1.0);
-  }
-
   void SetSpeedup(float speedup) {
-    set_speedup(speedup, kTestChannel);
+    set_speedup(get_test_time_control(), speedup);
     testing::sleep_for_nanos(.01 * kBillion);
   }
 };

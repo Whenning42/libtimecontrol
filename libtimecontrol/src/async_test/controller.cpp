@@ -5,11 +5,12 @@
 
 #include <fstream>
 #include <string>
+#include <vector>
 
 #include "src/async_test/common.h"
 #include "src/log.h"
+#include "src/time_control.h"
 #include "src/time_operators.h"
-#include "src/time_writer.h"
 
 FILE* run_subprocess(const char* command) {
   setenv("LD_PRELOAD", "./libtimecontrol/lib/libtime_control_dlsym32.so",
@@ -25,7 +26,8 @@ int main(int argc, char** argv) {
 
   remove(kTestFile);
 
-  set_speedup(1.0, 0);
+  TimeControl* time_control = new_time_control(0);
+  set_speedup(time_control, 1.0);
   std::vector<FILE*> procs;
   for (int i = 0; i < kNumProcesses; ++i) {
     procs.push_back(
@@ -41,7 +43,7 @@ int main(int argc, char** argv) {
     clock_gettime(CLOCK_MONOTONIC, &now);
     if (timespec_to_sec(now - start) > kTestLength) break;
 
-    set_speedup(1.0, 0);
+    set_speedup(time_control, 1.0);
 
     usleep(kSleepLen * 1'000'000);
   }
@@ -61,10 +63,12 @@ int main(int argc, char** argv) {
   if (lines != expected_successes) {
     fprintf(stderr, "Test failed. Passing processes: %d / %d.\n", lines,
             expected_successes);
+    delete_time_control(time_control);
     exit(1);
   } else {
     fprintf(stderr, "Test passed. Passing processes: %d / %d.\n", lines,
             expected_successes);
+    delete_time_control(time_control);
     exit(0);
   }
 }

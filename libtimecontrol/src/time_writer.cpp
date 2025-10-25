@@ -1,6 +1,7 @@
 #include "src/time_writer.h"
 
 #include <stddef.h>
+#include <sys/mman.h>
 #include <sys/socket.h>
 #include <sys/un.h>
 
@@ -14,7 +15,7 @@
 
 TimeWriter::TimeWriter() : TimeWriter(get_channel()) {}
 
-TimeWriter::TimeWriter(int32_t channel) {
+TimeWriter::TimeWriter(int32_t channel) : channel_(channel) {
   shm_ =
       reinterpret_cast<ShmLayout*>(get_channel_shm(channel, sizeof(ShmLayout)));
   shm_->speedup.store(1.0f);
@@ -31,6 +32,24 @@ TimeWriter::TimeWriter(int32_t channel) {
 
   std::thread t = std::thread([this]() { this->listen_thread(); });
   t.detach();
+}
+
+TimeWriter::~TimeWriter() {
+  for (auto& con : connections_) {
+    close(con.socket);
+  }
+
+  if (listen_socket_ != -1) {
+    close(listen_socket_);
+  }
+
+  char socket_path[kPathLen];
+  get_socket_path(channel_, socket_path);
+  unlink(socket_path);
+
+  if (shm_) {
+    munmap(shm_, sizeof(ShmLayout));
+  }
 }
 
 void TimeWriter::listen_thread() {
@@ -103,17 +122,4 @@ void TimeWriter::free_connection(int connection_idx) {
   }
 
   close(con.socket);
-}
-
-extern "C" void set_speedup(float speedup, int32_t channel) {
-  static std::map<int32_t, std::unique_ptr<TimeWriter>> time_writers_;
-
-  auto it = time_writers_.find(channel);
-  if (it == time_writers_.end()) {
-    bool added;
-    std::tie(it, added) =
-        time_writers_.emplace(channel, std::make_unique<TimeWriter>(channel));
-  }
-
-  it->second->set_speedup(speedup);
 }

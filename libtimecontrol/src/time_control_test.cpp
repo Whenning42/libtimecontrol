@@ -3,20 +3,17 @@
 #include "src/constants.h"
 #include "src/libc_overrides.h"
 #include "src/log.h"
+#include "src/real_time_fns.h"
+#include "src/time_control.h"
 #include "src/time_operators.h"
-#include "src/time_writer.h"
 
 
 const int32_t kTestChannel = -1;
 
 class TimeControlTest : public testing::Test {
  protected:
-  void SetUp() {
-    SetSpeedup(1.0);
-  }
-
   void SetSpeedup(float speedup) {
-    set_speedup(speedup, kTestChannel);
+    set_speedup(get_test_time_control(), speedup);
     real_fns().usleep(.01 * kMillion);
   }
 };

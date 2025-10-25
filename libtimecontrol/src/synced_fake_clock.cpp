@@ -6,7 +6,7 @@
 #include "src/real_time_fns.h"
 #include "src/time_operators.h"
 #ifdef INIT_WRITER
-#include "src/time_writer.h"
+#include "src/time_control.h"
 #endif
 
 namespace {
@@ -96,7 +96,9 @@ TimeReader* SyncedFakeClock::get_time_connection(clockid_t clock_id) {
 __attribute__((constructor))
 void reinit_process_clocks() {
   #ifdef INIT_WRITER
-  set_speedup(1, get_channel());
+  // Initialize the test time control before creating TimeReaders so they can
+  // connect to the TimeWriter's socket
+  get_test_time_control();
   #endif
 
   info("Preloaded time control library in %s", program_invocation_name);

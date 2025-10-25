@@ -12,16 +12,26 @@ class PreloadMode(Enum):
 
 class TimeController:
     def __init__(self, channel: int, preload_mode: PreloadMode = PreloadMode.DLSYM):
-        self.channel = channel
         self.preload_mode = preload_mode
 
         lib_path = PACKAGE_ROOT + "/lib/libtime_controller.so"
-        ffi = FFI()
-        ffi.cdef("void set_speedup(float speedup, int32_t channel);")
-        self.libtime_control = ffi.dlopen(lib_path)
+        self.ffi = FFI()
+        self.ffi.cdef("""
+            typedef struct TimeControl TimeControl;
+            TimeControl* new_time_control(int32_t channel);
+            void delete_time_control(TimeControl* time_control);
+            void set_speedup(TimeControl* time_control, float speedup);
+            const char* get_channel_var(TimeControl* time_control);
+        """)
+        self.libtime_control = self.ffi.dlopen(lib_path)
+        self.time_control = self.libtime_control.new_time_control(channel)
+
+    def __del__(self):
+        if hasattr(self, 'time_control') and self.time_control:
+            self.libtime_control.delete_time_control(self.time_control)
 
     def set_speedup(self, speedup: float) -> None:
-        self.libtime_control.set_speedup(speedup, self.channel)
+        self.libtime_control.set_speedup(self.time_control, speedup)
 
     def child_flags(self) -> dict[str, str]:
         mode_str = ""
@@ -31,4 +41,7 @@ class TimeController:
             f"{PACKAGE_ROOT}/lib/libtime_control{mode_str}.so:"
             f"{PACKAGE_ROOT}/lib/libtime_control{mode_str}32.so"
         )
-        return {"TIME_CONTROL_CHANNEL": str(self.channel), "LD_PRELOAD": preload}
+        channel_var = self.ffi.string(
+            self.libtime_control.get_channel_var(self.time_control)
+        ).decode('utf-8')
+        return {"TIME_CONTROL_CHANNEL": channel_var, "LD_PRELOAD": preload}

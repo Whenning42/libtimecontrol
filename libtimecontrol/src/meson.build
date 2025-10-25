@@ -57,8 +57,8 @@ synced_fake_clock_for_test = static_library(
 
 
 
-shared_library(
-  'time_controller', ['time_writer.cpp'],
+time_controller = shared_library(
+  'time_controller', ['time_writer.cpp', 'time_control.cpp'],
   link_with: [
     time_operators, time_writer, real_time_fns, log
   ],
@@ -94,32 +94,32 @@ endforeach
 # Tests
 test_deps = lib_deps + [lgtest_dep, lgtest_main_dep]
 test_targets = [
-  libc_overrides, log, real_time_fns, time_operators, time_reader, time_writer, synced_fake_clock_for_test
+  libc_overrides, log, real_time_fns, time_operators, time_reader, time_writer, synced_fake_clock_for_test, time_controller
 ]
 
 libc_overrides_test = executable(
   'libc_overrides_test',
   ['libc_overrides_test.cpp'],
   dependencies: test_deps,
-  include_directories: inc, 
+  include_directories: inc,
   link_with: test_targets)
 sock_read_struct_test = executable(
   'sock_read_struct_test',
   ['sock_read_struct_test.cpp'],
   dependencies: test_deps,
-  include_directories: inc, 
+  include_directories: inc,
   link_with: test_targets)
 synced_fake_clock_test = executable(
   'synced_fake_clock_test',
   ['synced_fake_clock_test.cpp'],
   dependencies: test_deps,
-  include_directories: inc, 
+  include_directories: inc,
   link_with: test_targets)
 time_control_test = executable(
   'time_control_test',
   ['time_control_test.cpp'],
   dependencies: test_deps,
-  include_directories: inc, 
+  include_directories: inc,
   link_with: test_targets)
 
 test('libc_overrides', libc_overrides_test, is_parallel: false)
