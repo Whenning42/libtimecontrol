@@ -6,7 +6,7 @@
 #include <sys/epoll.h>
 #include <unistd.h>
 
-#include "src/log.h"
+#include "src/util/log.h"
 
 
 typedef void* (*dlsym_type)(void*, const char*);

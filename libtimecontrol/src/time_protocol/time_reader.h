@@ -6,10 +6,10 @@
 #include <utility>
 #include <memory>
 
-#include "src/seq_lock.h"
-#include "src/shm_layout.h"
-#include "src/sock_read_struct.h"
-#include "src/time_wire.h"
+#include "src/ipc/seq_lock.h"
+#include "src/time_protocol/shm_layout.h"
+#include "src/ipc/sock_read_struct.h"
+#include "src/time_protocol/time_wire.h"
 
 
 class TimeReader {

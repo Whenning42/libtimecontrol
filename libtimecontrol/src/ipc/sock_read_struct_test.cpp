@@ -1,4 +1,4 @@
-#include "src/sock_read_struct.h"
+#include "src/ipc/sock_read_struct.h"
 
 #include <gtest/gtest.h>
 #include <sys/socket.h>

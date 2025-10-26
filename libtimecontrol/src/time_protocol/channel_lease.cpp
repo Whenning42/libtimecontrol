@@ -1,4 +1,4 @@
-#include "src/channel_lease.h"
+#include "src/time_protocol/channel_lease.h"
 
 #include <fcntl.h>
 #include <stdio.h>
@@ -8,7 +8,7 @@
 #include <cstdio>
 #include <cstdlib>
 
-#include "src/log.h"
+#include "src/util/log.h"
 
 constexpr int kMaxChannels = 20'000;
 constexpr int kPathLen = 256;

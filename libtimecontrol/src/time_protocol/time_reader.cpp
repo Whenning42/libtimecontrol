@@ -1,15 +1,15 @@
-#include "src/time_reader.h"
+#include "src/time_protocol/time_reader.h"
 
 #include <inttypes.h>
 #include <stdio.h>
 #include <sys/socket.h>
 #include <sys/un.h>
 
-#include "src/error.h"
-#include "src/ipc.h"
-#include "src/shared_mem.inl"
-#include "src/time_operators.h"
-#include "src/time_wire.h"
+#include "src/util/error.h"
+#include "src/ipc/ipc.h"
+#include "src/ipc/shared_mem.inl"
+#include "src/time_protocol/time_operators.h"
+#include "src/time_protocol/time_wire.h"
 
 TimeReader::TimeReader(clockid_t clock_id) {
   log("Reader on channel: %d\n", get_reader_channel());

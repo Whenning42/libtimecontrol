@@ -1,8 +1,8 @@
 #include <atomic>
 #include <mutex>
 
-#include "src/log.h"
-#include "src/shared_mem.inl"
+#include "src/util/log.h"
+#include "src/ipc/shared_mem.inl"
 
 
 template <class T>

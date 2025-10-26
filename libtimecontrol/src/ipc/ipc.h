@@ -10,10 +10,10 @@
 
 #include <string>
 
-#include "src/channel_lease.h"
-#include "src/error.h"
-#include "src/log.h"
-#include "src/shared_mem.inl"
+#include "src/time_protocol/channel_lease.h"
+#include "src/util/error.h"
+#include "src/util/log.h"
+#include "src/ipc/shared_mem.inl"
 
 using signal_type = uint32_t;
 

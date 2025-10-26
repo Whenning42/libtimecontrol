@@ -9,8 +9,8 @@
 
 #include "src/real_time_fns.h"
 #include "src/constants.h"
-#include "src/time_operators.h"
-#include "src/synced_fake_clock.h"
+#include "src/time_protocol/time_operators.h"
+#include "src/time_protocol/synced_fake_clock.h"
 
 
 time_t time(time_t* arg) {

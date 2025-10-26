@@ -1,11 +1,11 @@
-#include "src/synced_fake_clock.h"
+#include "src/time_protocol/synced_fake_clock.h"
 
 #include <gtest/gtest.h>
 #include <iostream>
 
 #include "src/constants.h"
-#include "src/ipc.h"
-#include "src/time_control.h"
+#include "src/ipc/ipc.h"
+#include "src/time_protocol/time_control.h"
 
 
 

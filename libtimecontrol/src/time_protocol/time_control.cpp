@@ -1,10 +1,10 @@
-#include "src/time_control.h"
+#include "src/time_protocol/time_control.h"
 
 #include <memory>
 #include <string>
 
-#include "src/ipc.h"
-#include "src/time_writer.h"
+#include "src/ipc/ipc.h"
+#include "src/time_protocol/time_writer.h"
 
 struct TimeControl {
   TimeWriter writer;

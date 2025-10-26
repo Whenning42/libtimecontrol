@@ -3,9 +3,9 @@
 #include <mutex>
 #include <vector>
 
-#include "src/ipc.h"
+#include "src/ipc/ipc.h"
 #include "src/real_time_fns.h"
-#include "src/shm_layout.h"
+#include "src/time_protocol/shm_layout.h"
 
 struct Connection {
   int socket;

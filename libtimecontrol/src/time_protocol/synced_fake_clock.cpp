@@ -1,12 +1,12 @@
-#include "src/synced_fake_clock.h"
+#include "src/time_protocol/synced_fake_clock.h"
 
 #include <cassert>
 
 #include "src/libc_overrides.h"
 #include "src/real_time_fns.h"
-#include "src/time_operators.h"
+#include "src/time_protocol/time_operators.h"
 #ifdef INIT_WRITER
-#include "src/time_control.h"
+#include "src/time_protocol/time_control.h"
 #endif
 
 namespace {

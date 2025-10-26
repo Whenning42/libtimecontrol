@@ -20,7 +20,7 @@ libc_overrides = static_library(
 )
 log = static_library(
     'log',
-    ['log.cpp'],
+    ['util/log.cpp'],
     include_directories: inc
 )
 real_time_fns = static_library(
@@ -30,27 +30,27 @@ real_time_fns = static_library(
 )
 time_operators = static_library(
     'time_operators',
-    ['time_operators.cpp'],
+    ['time_protocol/time_operators.cpp'],
     include_directories: inc
 )
 time_reader = static_library(
     'time_reader',
-    ['time_reader.cpp'],
+    ['time_protocol/time_reader.cpp'],
     include_directories: inc
 )
 time_writer = static_library(
     'time_writer',
-    ['time_writer.cpp'],
+    ['time_protocol/time_writer.cpp'],
     include_directories: inc
 )
 synced_fake_clock = static_library(
     'synced_fake_clock',
-    ['synced_fake_clock.cpp'],
+    ['time_protocol/synced_fake_clock.cpp'],
     include_directories: inc
 )
 synced_fake_clock_for_test = static_library(
     'synced_fake_clock_for_test',
-    ['synced_fake_clock.cpp'],
+    ['time_protocol/synced_fake_clock.cpp'],
     include_directories: inc,
     cpp_args: ['-DINIT_WRITER']
 )
@@ -58,7 +58,7 @@ synced_fake_clock_for_test = static_library(
 
 
 time_controller = shared_library(
-  'time_controller', ['time_writer.cpp', 'time_control.cpp', 'channel_lease.cpp'],
+  'time_controller', ['time_protocol/time_writer.cpp', 'time_protocol/time_control.cpp', 'time_protocol/channel_lease.cpp'],
   link_with: [
     time_operators, time_writer, real_time_fns, log
   ],
@@ -71,7 +71,7 @@ time_controller = shared_library(
 # libraries since we need to build under several different configurations.
 time_control_srcs = [
   # All of the targets except for time_writer and synced_fake_clock_for_test.
-  'libc_overrides.cpp', 'log.cpp', 'real_time_fns.cpp', 'time_operators.cpp', 'time_reader.cpp', 'synced_fake_clock.cpp', 'channel_lease.cpp'
+  'libc_overrides.cpp', 'util/log.cpp', 'real_time_fns.cpp', 'time_protocol/time_operators.cpp', 'time_protocol/time_reader.cpp', 'time_protocol/synced_fake_clock.cpp', 'time_protocol/channel_lease.cpp'
 ]
 variants = [
   {'name':'time_control', 'cpp': []},
@@ -105,19 +105,19 @@ libc_overrides_test = executable(
   link_with: test_targets)
 sock_read_struct_test = executable(
   'sock_read_struct_test',
-  ['sock_read_struct_test.cpp'],
+  ['ipc/sock_read_struct_test.cpp'],
   dependencies: test_deps,
   include_directories: inc,
   link_with: test_targets)
 synced_fake_clock_test = executable(
   'synced_fake_clock_test',
-  ['synced_fake_clock_test.cpp'],
+  ['time_protocol/synced_fake_clock_test.cpp'],
   dependencies: test_deps,
   include_directories: inc,
   link_with: test_targets)
 time_control_test = executable(
   'time_control_test',
-  ['time_control_test.cpp'],
+  ['time_protocol/time_control_test.cpp'],
   dependencies: test_deps,
   include_directories: inc,
   link_with: test_targets)

@@ -35,4 +35,4 @@ class SockReadStruct {
   bool has_new_val_;
 };
 
-#include "src/sock_read_struct.inl"
+#include "src/ipc/sock_read_struct.inl"

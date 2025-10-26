@@ -1,4 +1,4 @@
-#include "src/time_writer.h"
+#include "src/time_protocol/time_writer.h"
 
 #include <stddef.h>
 #include <sys/mman.h>
@@ -7,12 +7,12 @@
 
 #include <thread>
 
-#include "src/channel_lease.h"
-#include "src/error.h"
-#include "src/ipc.h"
+#include "src/time_protocol/channel_lease.h"
+#include "src/util/error.h"
+#include "src/ipc/ipc.h"
 #include "src/libc_overrides.h"
-#include "src/time_operators.h"
-#include "src/time_wire.h"
+#include "src/time_protocol/time_operators.h"
+#include "src/time_protocol/time_wire.h"
 
 TimeWriter::TimeWriter() : channel_(acquire_channel()) {
   log("Writer on channel: %d\n", channel_);

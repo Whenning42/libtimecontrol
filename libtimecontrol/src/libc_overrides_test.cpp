@@ -4,8 +4,8 @@
 
 #include "src/constants.h"
 #include "src/real_time_fns.h"
-#include "src/time_control.h"
-#include "src/time_operators.h"
+#include "src/time_protocol/time_control.h"
+#include "src/time_protocol/time_operators.h"
 
 int32_t kTestChannel = -1;
 

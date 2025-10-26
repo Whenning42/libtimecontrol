@@ -8,7 +8,7 @@
 #include <vector>
 
 #include "src/async_test/common.h"
-#include "src/time_operators.h"
+#include "src/time_protocol/time_operators.h"
 #include "src/real_time_fns.h"
 
 void run() {

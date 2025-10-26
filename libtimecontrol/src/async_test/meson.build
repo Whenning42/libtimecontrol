@@ -8,7 +8,7 @@ controller = executable(
   dependencies: lib_deps)
 controllee = executable(
   'controllee',
-  ['controllee.cpp', '../time_operators.cpp', '../log.cpp'],
+  ['controllee.cpp', '../time_protocol/time_operators.cpp', '../util/log.cpp'],
   cpp_args: ['-m32'],
   link_args: ['-m32'],
   link_with: [time_controls[3]],

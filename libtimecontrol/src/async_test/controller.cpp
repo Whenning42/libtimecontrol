@@ -8,9 +8,9 @@
 #include <vector>
 
 #include "src/async_test/common.h"
-#include "src/log.h"
-#include "src/time_control.h"
-#include "src/time_operators.h"
+#include "src/util/log.h"
+#include "src/time_protocol/time_control.h"
+#include "src/time_protocol/time_operators.h"
 
 FILE* run_subprocess(const char* command, const char* channel_var) {
   setenv("LD_PRELOAD", "./libtimecontrol/src/libtime_control_dlsym32.so",
