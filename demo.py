@@ -3,12 +3,7 @@ import subprocess
 
 from libtimecontrol import TimeController
 
-# TimeControllers run on "time channels" which are non-negative int32 values that the
-# time controlling and time controlled processes use to coordinate their inter-process
-# communication. All time controllers should get their own time channel. As many time
-# controlled processes as you desire can listen to a time channel.
-time_channel = 0
-controller = TimeController(time_channel)
+controller = TimeController()
 
 # Make time run 25x faster in child processes.
 controller.set_speedup(25)

@@ -12,10 +12,10 @@
 #include "src/time_control.h"
 #include "src/time_operators.h"
 
-FILE* run_subprocess(const char* command) {
-  setenv("LD_PRELOAD", "./libtimecontrol/lib/libtime_control_dlsym32.so",
+FILE* run_subprocess(const char* command, const char* channel_var) {
+  setenv("LD_PRELOAD", "./libtimecontrol/src/libtime_control_dlsym32.so",
          /*replace=*/1);
-  setenv("TIME_CONTROL_CHANNEL", "0", /*replace=*/1);
+  setenv("TIME_CONTROL_CHANNEL", channel_var, /*replace=*/1);
 
   return popen(command, "r");
 }
@@ -26,12 +26,13 @@ int main(int argc, char** argv) {
 
   remove(kTestFile);
 
-  TimeControl* time_control = new_time_control(0);
+  TimeControl* time_control = new_time_control();
   set_speedup(time_control, 1.0);
+  const char* channel_var = get_channel_var(time_control);
   std::vector<FILE*> procs;
   for (int i = 0; i < kNumProcesses; ++i) {
-    procs.push_back(
-        run_subprocess("./libtimecontrol/src/async_test/controllee"));
+    procs.push_back(run_subprocess("./libtimecontrol/src/async_test/controllee",
+                                   channel_var));
   }
   fprintf(stderr, "Running parent\n");
 

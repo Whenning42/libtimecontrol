@@ -15,4 +15,4 @@ controllee = executable(
   include_directories: inc,
   dependencies: lib_deps)
 
-test('async_test', controller, is_parallel: false)
+test('async_test', controller)

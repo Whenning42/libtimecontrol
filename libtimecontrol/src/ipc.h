@@ -10,6 +10,7 @@
 
 #include <string>
 
+#include "src/channel_lease.h"
 #include "src/error.h"
 #include "src/log.h"
 #include "src/shared_mem.inl"
@@ -18,13 +19,18 @@ using signal_type = uint32_t;
 
 constexpr int32_t kPathLen = 108;
 
-inline int32_t get_channel() {
-  const char* default_channel = "-1";
-  const char* time_channel_env_var = "TIME_CONTROL_CHANNEL";
-  const char* channel_var = getenv(time_channel_env_var);
-  channel_var = channel_var ? channel_var : default_channel;
-  log("Getting channel: %d", std::stoi(channel_var));
-  return std::stoi(channel_var);
+inline int32_t* default_reader_channel() {
+  static int32_t default_channel = -1;
+  return &default_channel;
+}
+
+inline int32_t get_reader_channel() {
+  char* env_var = getenv("TIME_CONTROL_CHANNEL");
+  if (env_var) {
+    return std::stoi(env_var);
+  }
+
+  return *default_reader_channel();
 }
 
 inline void* get_channel_shm(int32_t id, size_t size) {
@@ -43,21 +49,16 @@ inline void* get_channel_shm(int32_t id, size_t size) {
 }
 
 inline void get_socket_path(int32_t channel, char buf[kPathLen]) {
-  const char* runtime_dir = "/tmp";
-  // const char* runtime_dir = getenv("XDG_RUNTIME_DIR");
-  // runtime_dir = runtime_dir ? runtime_dir : "/tmp";
+  std::string run_dir = get_run_dir();
 
-  char sock_dir[kPathLen];
-  snprintf(sock_dir, kPathLen, "%s/time_control", runtime_dir);
-
-  int r = mkdir(sock_dir, 0755);
+  int r = mkdir(run_dir.c_str(), 0755);
   if (r == -1 && errno == EEXIST) errno = 0;
   if (errno) {
     perror("mkdir");
-    log(" for file: %s", sock_dir);
+    log(" for file: %s", run_dir.c_str());
   }
 
-  snprintf(buf, kPathLen, "%s/time_control/sock_%d", runtime_dir, channel);
+  snprintf(buf, kPathLen, "%s/sock_%d", run_dir.c_str(), channel);
 }
 
 inline sockaddr_un get_socket_addr(int32_t channel) {

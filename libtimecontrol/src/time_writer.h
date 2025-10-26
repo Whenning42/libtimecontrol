@@ -25,19 +25,19 @@ class TimeWriter {
  public:
   // Uses default configured shared memory size and channel.
   TimeWriter();
-  TimeWriter(int32_t channel);
   ~TimeWriter();
 
   void listen_thread();
   void set_speedup(float speedup);
+  int32_t get_channel() const { return channel_; }
 
  private:
   // Handshake with the client to get the clockid we'll watch and to send
   // over the speedup and signal pointers they will listen to.
   //
-  // Note: setup_connection blocks initial time reads in time controlled processes.
-  // I think it's okay if it blocks, it just means the first time reads in a process
-  // will be relatively slow which should be ok.
+  // Note: setup_connection blocks initial time reads in time controlled
+  // processes. I think it's okay if it blocks, it just means the first time
+  // reads in a process will be relatively slow which should be ok.
   void setup_connection(int accepted_socket);
   void free_connection(int connection_idx);
 

@@ -7,22 +7,22 @@
 
 #include <thread>
 
+#include "src/channel_lease.h"
 #include "src/error.h"
 #include "src/ipc.h"
 #include "src/libc_overrides.h"
 #include "src/time_operators.h"
 #include "src/time_wire.h"
 
-TimeWriter::TimeWriter() : TimeWriter(get_channel()) {}
-
-TimeWriter::TimeWriter(int32_t channel) : channel_(channel) {
-  shm_ =
-      reinterpret_cast<ShmLayout*>(get_channel_shm(channel, sizeof(ShmLayout)));
+TimeWriter::TimeWriter() : channel_(acquire_channel()) {
+  log("Writer on channel: %d\n", channel_);
+  shm_ = reinterpret_cast<ShmLayout*>(
+      get_channel_shm(channel_, sizeof(ShmLayout)));
   shm_->speedup.store(1.0f);
   shm_->clock_generation.store(0);
 
   // Set up socket for listening.
-  sockaddr_un addr = get_socket_addr(channel);
+  sockaddr_un addr = get_socket_addr(channel_);
 
   listen_socket_ = make_socket();
   LOG_IF_ERROR("writer unlink", unlink(addr.sun_path));
@@ -50,6 +50,8 @@ TimeWriter::~TimeWriter() {
   if (shm_) {
     munmap(shm_, sizeof(ShmLayout));
   }
+
+  release_channel(channel_);
 }
 
 void TimeWriter::listen_thread() {

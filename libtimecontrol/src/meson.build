@@ -58,7 +58,7 @@ synced_fake_clock_for_test = static_library(
 
 
 time_controller = shared_library(
-  'time_controller', ['time_writer.cpp', 'time_control.cpp'],
+  'time_controller', ['time_writer.cpp', 'time_control.cpp', 'channel_lease.cpp'],
   link_with: [
     time_operators, time_writer, real_time_fns, log
   ],
@@ -71,7 +71,7 @@ time_controller = shared_library(
 # libraries since we need to build under several different configurations.
 time_control_srcs = [
   # All of the targets except for time_writer and synced_fake_clock_for_test.
-  'libc_overrides.cpp', 'log.cpp', 'real_time_fns.cpp', 'time_operators.cpp', 'time_reader.cpp', 'synced_fake_clock.cpp'
+  'libc_overrides.cpp', 'log.cpp', 'real_time_fns.cpp', 'time_operators.cpp', 'time_reader.cpp', 'synced_fake_clock.cpp', 'channel_lease.cpp'
 ]
 variants = [
   {'name':'time_control', 'cpp': []},
@@ -122,10 +122,10 @@ time_control_test = executable(
   include_directories: inc,
   link_with: test_targets)
 
-test('libc_overrides', libc_overrides_test, is_parallel: false)
-test('sock_read_struct_test', sock_read_struct_test, is_parallel: false)
-test('synced_fake_clock', synced_fake_clock_test, is_parallel: false)
-test('time_control_test', time_control_test, is_parallel: false)
+test('libc_overrides', libc_overrides_test)
+test('sock_read_struct_test', sock_read_struct_test)
+test('synced_fake_clock', synced_fake_clock_test)
+test('time_control_test', time_control_test)
 
 subdir('async_test')
 subdir('util')

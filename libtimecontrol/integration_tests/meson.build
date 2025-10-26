@@ -24,4 +24,4 @@ test('integration test',
      python,
      args: [meson.project_source_root() / 'libtimecontrol/integration_tests/integration_test.py'],
      env: ['PYTHONPATH=' + meson.project_source_root()],
-     is_parallel: false)
+     )

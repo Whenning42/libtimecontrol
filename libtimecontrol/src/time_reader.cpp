@@ -8,21 +8,24 @@
 #include "src/error.h"
 #include "src/ipc.h"
 #include "src/shared_mem.inl"
-#include "src/time_wire.h"
 #include "src/time_operators.h"
-
+#include "src/time_wire.h"
 
 TimeReader::TimeReader(clockid_t clock_id) {
-  sockaddr_un addr = get_socket_addr(get_channel());
+  log("Reader on channel: %d\n", get_reader_channel());
+  sockaddr_un addr = get_socket_addr(get_reader_channel());
   int sock = make_socket();
 
-  EXIT_IF_ERROR("Time socket connect", connect(sock, (sockaddr*)&addr, sizeof(addr)));
+  EXIT_IF_ERROR("Time socket connect",
+                connect(sock, (sockaddr*)&addr, sizeof(addr)));
 
   // Open the shared memory segment
-  ShmLayout* shm = reinterpret_cast<ShmLayout*>(get_channel_shm(get_channel(), sizeof(ShmLayout)));
+  ShmLayout* shm = reinterpret_cast<ShmLayout*>(
+      get_channel_shm(get_reader_channel(), sizeof(ShmLayout)));
 
   // Send the clock_id we want monitored
-  EXIT_IF_ERROR("reader handshake send", send(sock, &clock_id, sizeof(clock_id), 0));
+  EXIT_IF_ERROR("reader handshake send",
+                send(sock, &clock_id, sizeof(clock_id), 0));
 
   // Switch the socket to non-blocking mode for receiving on.
   int flags = fcntl(sock, F_GETFL, 0);
@@ -46,7 +49,8 @@ TimeReader::TimeReader(clockid_t clock_id) {
 }
 
 void TimeReader::update() {
-  uint32_t cur_clock_gen = shm_->clock_generation.load(std::memory_order_acquire);
+  uint32_t cur_clock_gen =
+      shm_->clock_generation.load(std::memory_order_acquire);
   uint32_t last_clock_gen = last_clock_gen_.load(std::memory_order_acquire);
 
   if (cur_clock_gen != last_clock_gen) {
@@ -56,10 +60,10 @@ void TimeReader::update() {
     baseline_reader_.read();
     if (!baseline_reader_.has_new_val()) return;
 
-    std::pair<timespec, timespec> new_baselines = baseline_reader_.val().to_timespecs();
+    std::pair<timespec, timespec> new_baselines =
+        baseline_reader_.val().to_timespecs();
 
     baselines_.write(new_baselines);
     last_clock_gen_.store(cur_clock_gen, std::memory_order_release);
   }
 }
-

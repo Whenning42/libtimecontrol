@@ -10,7 +10,7 @@
 
 
 TEST(SyncedFakeClockTest, UpdatesHappen) {
-  TimeControl* time_control = new_time_control(get_channel());
+  TimeControl* time_control = get_test_time_control();
   set_speedup(time_control, 1);
   SyncedFakeClock& c = fake_clock();
 
@@ -19,5 +19,4 @@ TEST(SyncedFakeClockTest, UpdatesHappen) {
   usleep(.1 * kMillion);
 
   EXPECT_EQ(c.get_speedup(), 5);
-  delete_time_control(time_control);
 }

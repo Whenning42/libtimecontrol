@@ -3,7 +3,6 @@
 # test binaries need to be built (run build.sh).
 
 import os
-import random
 import subprocess
 
 from libtimecontrol.libtimecontrol import PreloadMode, TimeController
@@ -27,8 +26,7 @@ def test_prog(name, preload_mode, speedup):
     test_length = 0.5
     expected_ticks = test_length * 100 * speedup
 
-    channel = random.randint(0, 2**30)
-    controller = TimeController(channel, preload_mode)
+    controller = TimeController(preload_mode)
     controller.set_speedup(speedup)
     print("============= RUNNING: ", name, " =============")
     out = run_program(name, test_length, controller.child_flags())

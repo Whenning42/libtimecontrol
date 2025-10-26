@@ -11,20 +11,20 @@ class PreloadMode(Enum):
 
 
 class TimeController:
-    def __init__(self, channel: int, preload_mode: PreloadMode = PreloadMode.DLSYM):
+    def __init__(self, preload_mode: PreloadMode = PreloadMode.DLSYM):
         self.preload_mode = preload_mode
 
         lib_path = PACKAGE_ROOT + "/lib/libtime_controller.so"
         self.ffi = FFI()
         self.ffi.cdef("""
             typedef struct TimeControl TimeControl;
-            TimeControl* new_time_control(int32_t channel);
+            TimeControl* new_time_control();
             void delete_time_control(TimeControl* time_control);
             void set_speedup(TimeControl* time_control, float speedup);
             const char* get_channel_var(TimeControl* time_control);
         """)
         self.libtime_control = self.ffi.dlopen(lib_path)
-        self.time_control = self.libtime_control.new_time_control(channel)
+        self.time_control = self.libtime_control.new_time_control()
 
     def __del__(self):
         if hasattr(self, 'time_control') and self.time_control:
