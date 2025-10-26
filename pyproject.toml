@@ -1,6 +1,6 @@
 [project]
 name = "libtimecontrol"
-version = "0.1.5"
+version = "0.2.0"
 description = "An experimental library for realtime control of the speed of time in Linux child processes"
 authors = [
     {name = "William Henning",email = "wchenningwchenning@gmail.com"}

@@ -33,6 +33,7 @@ void lock_file(const std::string& path) {
   assert(fd != -1);
   int result = flock(fd, LOCK_EX | LOCK_NB);
   assert(result == 0);
+  (void)result;  // Silence unused variable warnings in no-assert builds.
 }
 
 std::string live_file_path(const std::string& ephemeral_dir) {

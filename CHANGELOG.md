@@ -1,3 +1,9 @@
+0.2.0 - 2025-10-25
+
+Updated API so that TimeController's no longer take channels.
+Channels are now selected automatically and are hidden from
+callers.
+
 0.1.5 - 2025-10-23
 
 Add a pyproject description.
